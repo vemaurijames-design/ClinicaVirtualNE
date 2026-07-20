@@ -1,7 +1,7 @@
 
-  # Plantilla de chat bot
+  # clinica virtual adicciones by nicolas escobar
 
-  This is a code bundle for Plantilla de chat bot. The original project is available at https://www.figma.com/design/ZjpruVWGi3WFguu9sVbW6Q/Plantilla-de-chat-bot.
+  This is a code bundle for clinica virtual adicciones by nicolas escobar. The original project is available at https://www.figma.com/design/ZjpruVWGi3WFguu9sVbW6Q/clinica-virtual-adicciones-by-nicolas-escobar.
 
   ## Running the code
 
