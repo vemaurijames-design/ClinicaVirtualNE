@@ -1700,8 +1700,8 @@ function AuthPage() {
   const { login, register, user, forgotPassword, resetPassword } = useAuth();
   const { t } = useLang();
   const navigate = useNavigate();
-  const [mode, setMode] = useState<"login" | "register">("register");
-  const [authView, setAuthView] = useState<AuthView>("register");
+  const [mode, setMode] = useState<"login" | "register">("login");
+  const [authView, setAuthView] = useState<AuthView>("login");
 
   // Campos
   const [name, setName] = useState(""); const [email, setEmail] = useState(""); const [pass, setPass] = useState("");
@@ -1714,14 +1714,14 @@ function AuthPage() {
   const [newPass, setNewPass] = useState("");
   const [showNewPass, setShowNewPass] = useState(false);
 
-  useEffect(() => { if (user) navigate("/historia"); }, [user]);
+  // Navegar cuando user cambia a no-null (después de que React confirme el estado)
+  useEffect(() => { if (user) navigate("/historia", { replace: true }); }, [user]);
   useEffect(() => { setAuthView(mode); }, [mode]);
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
 
-    // Validaciones básicas antes de intentar
     if (!email.trim()) { setError("Ingrese su correo electrónico."); return; }
     if (!pass.trim() || pass.length < 6) { setError("La contraseña debe tener al menos 6 caracteres."); return; }
     if (mode === "register" && !name.trim()) { setError("Ingrese su nombre completo."); return; }
@@ -1730,20 +1730,13 @@ function AuthPage() {
     try {
       if (mode === "login") {
         const ok = await login(email.trim().toLowerCase(), pass);
-        if (ok) {
-          navigate("/historia");
-        } else {
-          setError("Correo o contraseña incorrectos. ¿Ya tiene cuenta registrada?");
-        }
+        // No navegamos aquí — el useEffect[user] lo hace después de que React confirme el estado
+        if (!ok) setError("Correo o contraseña incorrectos. ¿Ya tiene cuenta registrada?");
       } else {
         const ok = await register(name.trim(), email.trim().toLowerCase(), pass);
-        if (ok) {
-          navigate("/historia");
-        } else {
-          setError("Este correo ya está registrado. Intente iniciar sesión.");
-        }
+        if (!ok) setError("Este correo ya está registrado. Intente iniciar sesión.");
       }
-    } catch (err) {
+    } catch {
       setError("Ocurrió un error. Intente de nuevo.");
     } finally {
       setLoading(false);
