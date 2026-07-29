@@ -312,50 +312,136 @@ interface AuthCtx {
 const AuthContext = createContext<AuthCtx>({} as AuthCtx);
 const useAuth = () => useContext(AuthContext);
 
+// URL base del backend Java — usa variable de entorno o localhost por defecto
+const API_URL = (import.meta.env.VITE_API_URL as string) || "http://localhost:8080";
+
 function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<AuthUser | null>(() => {
     try { return JSON.parse(localStorage.getItem("ch_user") || "null"); } catch { return null; }
   });
-  const login = async (email: string, pass: string) => {
+
+  const login = async (email: string, pass: string): Promise<boolean> => {
+    try {
+      const res = await fetch(`${API_URL}/api/auth/login`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: email.trim().toLowerCase(), password: pass }),
+      });
+      const json = await res.json();
+      if (!res.ok || !json.success) return false;
+      const data = json.data;
+      const u: AuthUser = { id: String(data.email), name: data.nombre, email: data.email };
+      // Guardar token JWT para llamadas futuras al backend
+      localStorage.setItem("ch_jwt", data.token);
+      localStorage.setItem("ch_user", JSON.stringify(u));
+      setUser(u);
+      return true;
+    } catch {
+      // Si el backend no está disponible, fallback a localStorage
+      return loginLocal(email, pass);
+    }
+  };
+
+  const loginLocal = (email: string, pass: string): boolean => {
+    const emailNorm = email.trim().toLowerCase();
     const users: any[] = JSON.parse(localStorage.getItem("ch_users") || "[]");
-    const found = users.find(u => u.email === email && u.password === pass);
-    if (found) { const u = { id: found.id, name: found.name, email: found.email }; setUser(u); localStorage.setItem("ch_user", JSON.stringify(u)); return true; }
+    const found = users.find((u: any) => u.email.toLowerCase() === emailNorm && u.password === pass);
+    if (found) {
+      const u: AuthUser = { id: found.id, name: found.name, email: found.email };
+      setUser(u);
+      localStorage.setItem("ch_user", JSON.stringify(u));
+      return true;
+    }
     return false;
   };
-  const register = async (name: string, email: string, pass: string) => {
-    const users: any[] = JSON.parse(localStorage.getItem("ch_users") || "[]");
-    if (users.find(u => u.email === email)) return false;
-    const nu = { id: Date.now().toString(), name, email, password: pass };
-    users.push(nu); localStorage.setItem("ch_users", JSON.stringify(users));
-    const u = { id: nu.id, name, email }; setUser(u); localStorage.setItem("ch_user", JSON.stringify(u)); return true;
-  };
-  const logout = () => { setUser(null); localStorage.removeItem("ch_user"); };
 
-  // Genera un token de 6 caracteres y lo guarda en localStorage (en producción: enviar por email)
-  const forgotPassword = async (email: string): Promise<string | null> => {
+  const register = async (name: string, email: string, pass: string): Promise<boolean> => {
+    try {
+      const res = await fetch(`${API_URL}/api/auth/registrar`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ nombre: name.trim(), email: email.trim().toLowerCase(), password: pass }),
+      });
+      const json = await res.json();
+      if (!res.ok || !json.success) return false;
+      const data = json.data;
+      const u: AuthUser = { id: String(data.email), name: data.nombre, email: data.email };
+      localStorage.setItem("ch_jwt", data.token);
+      localStorage.setItem("ch_user", JSON.stringify(u));
+      setUser(u);
+      return true;
+    } catch {
+      // Si el backend no está disponible, fallback a localStorage
+      return registerLocal(name, email, pass);
+    }
+  };
+
+  const registerLocal = (name: string, email: string, pass: string): boolean => {
+    const emailNorm = email.trim().toLowerCase();
     const users: any[] = JSON.parse(localStorage.getItem("ch_users") || "[]");
-    const found = users.find(u => u.email === email);
-    if (!found) return null;
-    const token = Math.random().toString(36).slice(2, 8).toUpperCase();
-    const tokens: any[] = JSON.parse(localStorage.getItem("ch_reset_tokens") || "[]");
-    const filtered = tokens.filter(t => t.email !== email);
-    filtered.push({ email, token, expires: Date.now() + 15 * 60 * 1000 }); // 15 min
-    localStorage.setItem("ch_reset_tokens", JSON.stringify(filtered));
-    return token; // En producción esto se envía al email, no se retorna al frontend
+    if (users.find((u: any) => u.email.toLowerCase() === emailNorm)) return false;
+    const nu = { id: Date.now().toString(), name: name.trim(), email: emailNorm, password: pass };
+    users.push(nu);
+    localStorage.setItem("ch_users", JSON.stringify(users));
+    const u: AuthUser = { id: nu.id, name: nu.name, email: nu.email };
+    setUser(u);
+    localStorage.setItem("ch_user", JSON.stringify(u));
+    return true;
+  };
+
+  const logout = () => {
+    setUser(null);
+    localStorage.removeItem("ch_user");
+    localStorage.removeItem("ch_jwt");
+  };
+
+  const forgotPassword = async (email: string): Promise<string | null> => {
+    try {
+      const res = await fetch(`${API_URL}/api/auth/forgot-password`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: email.trim().toLowerCase() }),
+      });
+      const json = await res.json();
+      if (!res.ok || !json.success) return null;
+      // El backend retorna el token en modo demo
+      return json.data?.token || "DEMO";
+    } catch {
+      // Fallback localStorage
+      const users: any[] = JSON.parse(localStorage.getItem("ch_users") || "[]");
+      const found = users.find((u: any) => u.email === email.trim().toLowerCase());
+      if (!found) return null;
+      const token = Math.random().toString(36).slice(2, 8).toUpperCase();
+      const tokens: any[] = JSON.parse(localStorage.getItem("ch_reset_tokens") || "[]");
+      const filtered = tokens.filter((t: any) => t.email !== email);
+      filtered.push({ email, token, expires: Date.now() + 15 * 60 * 1000 });
+      localStorage.setItem("ch_reset_tokens", JSON.stringify(filtered));
+      return token;
+    }
   };
 
   const resetPassword = async (token: string, newPass: string): Promise<boolean> => {
-    const tokens: any[] = JSON.parse(localStorage.getItem("ch_reset_tokens") || "[]");
-    const entry = tokens.find(t => t.token === token.toUpperCase() && t.expires > Date.now());
-    if (!entry) return false;
-    const users: any[] = JSON.parse(localStorage.getItem("ch_users") || "[]");
-    const idx = users.findIndex(u => u.email === entry.email);
-    if (idx === -1) return false;
-    users[idx].password = newPass;
-    localStorage.setItem("ch_users", JSON.stringify(users));
-    // Invalidar token
-    localStorage.setItem("ch_reset_tokens", JSON.stringify(tokens.filter(t => t.token !== token.toUpperCase())));
-    return true;
+    try {
+      const res = await fetch(`${API_URL}/api/auth/reset-password`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ token, nuevaPassword: newPass }),
+      });
+      const json = await res.json();
+      return res.ok && json.success;
+    } catch {
+      // Fallback localStorage
+      const tokens: any[] = JSON.parse(localStorage.getItem("ch_reset_tokens") || "[]");
+      const entry = tokens.find((t: any) => t.token === token.toUpperCase() && t.expires > Date.now());
+      if (!entry) return false;
+      const users: any[] = JSON.parse(localStorage.getItem("ch_users") || "[]");
+      const idx = users.findIndex((u: any) => u.email === entry.email);
+      if (idx === -1) return false;
+      users[idx].password = newPass;
+      localStorage.setItem("ch_users", JSON.stringify(users));
+      localStorage.setItem("ch_reset_tokens", JSON.stringify(tokens.filter((t: any) => t.token !== token.toUpperCase())));
+      return true;
+    }
   };
 
   return <AuthContext.Provider value={{ user, login, register, logout, forgotPassword, resetPassword }}>{children}</AuthContext.Provider>;
@@ -1632,11 +1718,36 @@ function AuthPage() {
   useEffect(() => { setAuthView(mode); }, [mode]);
 
   const submit = async (e: React.FormEvent) => {
-    e.preventDefault(); setError(""); setLoading(true);
+    e.preventDefault();
+    setError("");
+
+    // Validaciones básicas antes de intentar
+    if (!email.trim()) { setError("Ingrese su correo electrónico."); return; }
+    if (!pass.trim() || pass.length < 6) { setError("La contraseña debe tener al menos 6 caracteres."); return; }
+    if (mode === "register" && !name.trim()) { setError("Ingrese su nombre completo."); return; }
+
+    setLoading(true);
     try {
-      if (mode === "login") { const ok = await login(email, pass); if (!ok) setError("Correo o contraseña incorrectos."); }
-      else { if (!name.trim()) { setError("Ingrese su nombre."); return; } const ok = await register(name, email, pass); if (!ok) setError("Este correo ya está registrado."); }
-    } finally { setLoading(false); }
+      if (mode === "login") {
+        const ok = await login(email.trim().toLowerCase(), pass);
+        if (ok) {
+          navigate("/historia");
+        } else {
+          setError("Correo o contraseña incorrectos. ¿Ya tiene cuenta registrada?");
+        }
+      } else {
+        const ok = await register(name.trim(), email.trim().toLowerCase(), pass);
+        if (ok) {
+          navigate("/historia");
+        } else {
+          setError("Este correo ya está registrado. Intente iniciar sesión.");
+        }
+      }
+    } catch (err) {
+      setError("Ocurrió un error. Intente de nuevo.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   const submitForgot = async (e: React.FormEvent) => {
