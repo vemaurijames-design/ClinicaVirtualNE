@@ -87,7 +87,7 @@ import clinicHeroBg from "@/imports/descarga.png";
 // TRANSLATIONS (ES / EN / FR / DE) — Completo para toda la app
 // ═══════════════════════════════════════════════════════
 
-type Lang = "es" | "en" | "fr" | "de";
+type Lang = "es" | "en" | "fr" | "de" | "pt";
 
 const T = {
   es: {
@@ -98,7 +98,8 @@ const T = {
     navServices: "Servicios", navHowWorks: "Cómo funciona", navTeam: "Equipo", navContact: "Contacto",
     startBtn: "Comenzar evaluación gratuita", howWorks: "Cómo funciona",
     ourPrograms: "Nuestros Programas", programsSub: "Tratamiento intensivo y progresivo para tu recuperación completa.",
-    month1: "Mes 1 — Programa Intensivo", month2: "Mes 2 — Consolidación",
+    month1: "Mes 1 — Programa Intensivo", month2: "Mes 2 — Profundización",
+    month3: "Mes 3 — Consolidación", month4: "Mes 4 — Cierre & Bienestar",
     audioLib: "Biblioteca de Audios", audioSub: "Autohipnosis, música binaural y podcasts terapéuticos con la voz del médico.",
     videoLib: "Biblioteca de Videos", videoSub: "Sesiones grabadas de autohipnosis y yoga terapéutico.",
     groupMeetings: "Reuniones Grupales", groupSub: "Semana 1 y Semana 3 de cada mes. Modalidad virtual o presencial.",
@@ -135,7 +136,8 @@ const T = {
     navServices: "Services", navHowWorks: "How it works", navTeam: "Team", navContact: "Contact",
     startBtn: "Start free assessment", howWorks: "How it works",
     ourPrograms: "Our Programs", programsSub: "Intensive and progressive treatment for your complete recovery.",
-    month1: "Month 1 — Intensive Program", month2: "Month 2 — Consolidation",
+    month1: "Month 1 — Intensive Program", month2: "Month 2 — Deepening",
+    month3: "Month 3 — Consolidation", month4: "Month 4 — Closure & Wellness",
     audioLib: "Audio Library", audioSub: "Self-hypnosis, binaural music and therapeutic podcasts with the doctor's voice.",
     videoLib: "Video Library", videoSub: "Recorded sessions of self-hypnosis and therapeutic yoga.",
     groupMeetings: "Group Meetings", groupSub: "Week 1 and Week 3 of each month. Virtual or in-person.",
@@ -172,7 +174,8 @@ const T = {
     navServices: "Services", navHowWorks: "Comment ça marche", navTeam: "Équipe", navContact: "Contact",
     startBtn: "Commencer l'évaluation gratuite", howWorks: "Comment ça marche",
     ourPrograms: "Nos Programmes", programsSub: "Traitement intensif et progressif pour votre rétablissement complet.",
-    month1: "Mois 1 — Programme Intensif", month2: "Mois 2 — Consolidation",
+    month1: "Mois 1 — Programme Intensif", month2: "Mois 2 — Approfondissement",
+    month3: "Mois 3 — Consolidation", month4: "Mois 4 — Clôture & Bien-être",
     audioLib: "Bibliothèque Audio", audioSub: "Auto-hypnose, musique binaurale et podcasts thérapeutiques avec la voix du médecin.",
     videoLib: "Bibliothèque Vidéo", videoSub: "Séances enregistrées d'auto-hypnose et de yoga thérapeutique.",
     groupMeetings: "Réunions de Groupe", groupSub: "Semaine 1 et Semaine 3 de chaque mois. Virtuel ou présentiel.",
@@ -209,7 +212,8 @@ const T = {
     navServices: "Dienste", navHowWorks: "Wie es funktioniert", navTeam: "Team", navContact: "Kontakt",
     startBtn: "Kostenlose Bewertung starten", howWorks: "Wie es funktioniert",
     ourPrograms: "Unsere Programme", programsSub: "Intensiv- und progressives Behandlungsprogramm für Ihre vollständige Genesung.",
-    month1: "Monat 1 — Intensivprogramm", month2: "Monat 2 — Konsolidierung",
+    month1: "Monat 1 — Intensivprogramm", month2: "Monat 2 — Vertiefung",
+    month3: "Monat 3 — Konsolidierung", month4: "Monat 4 — Abschluss & Wohlbefinden",
     audioLib: "Audio-Bibliothek", audioSub: "Selbsthypnose, binaurale Musik und therapeutische Podcasts mit der Stimme des Arztes.",
     videoLib: "Video-Bibliothek", videoSub: "Aufgezeichnete Sitzungen zur Selbsthypnose und therapeutischen Yoga.",
     groupMeetings: "Gruppentreffen", groupSub: "Woche 1 und Woche 3 jedes Monats. Virtuell oder persönlich.",
@@ -237,6 +241,44 @@ const T = {
     includedInPlan: "In Ihrem Plan enthalten:",
     videosInPlan: "Selbsthypnose-Videos enthalten:",
     audiosInPlan: "Audios enthalten:",
+  },
+  pt: {
+    clinicName: "Clínica Virtual · Consultório Holístico",
+    tagline: "Centro Holístico de Bem-estar",
+    heroTitle: "Recupere sua vida.\nComece hoje.",
+    heroSub: "Centro especializado em tratamento holístico de dependências. Psiquiatria, psicologia, hipnose clínica e medicina integrativa.",
+    navServices: "Serviços", navHowWorks: "Como funciona", navTeam: "Equipe", navContact: "Contato",
+    startBtn: "Iniciar avaliação gratuita", howWorks: "Como funciona",
+    ourPrograms: "Nossos Programas", programsSub: "Tratamento intensivo e progressivo para sua recuperação completa.",
+    month1: "Mês 1 — Programa Intensivo", month2: "Mês 2 — Aprofundamento",
+    month3: "Mês 3 — Consolidação", month4: "Mês 4 — Encerramento & Bem-estar",
+    audioLib: "Biblioteca de Áudios", audioSub: "Auto-hipnose, música binaural e podcasts terapêuticos com a voz do médico.",
+    videoLib: "Biblioteca de Vídeos", videoSub: "Sessões gravadas de auto-hipnose e yoga terapêutico.",
+    groupMeetings: "Reuniões em Grupo", groupSub: "Semana 1 e Semana 3 de cada mês. Modalidade virtual ou presencial.",
+    gift: "🎁 Presente de boas-vindas:", giftDesc: "Vídeo de auto-hipnose + música binaural (voz do Dr.) na sua primeira sessão.",
+    login: "Entrar", register: "Cadastrar-se", myPanel: "Meu Painel",
+    autohipnosis: "Auto-hipnose", binaural: "Música Binaural", podcasts: "Podcasts",
+    free: "Grátis", premium: "Premium", locked: "Requer plano ativo",
+    virtual: "Virtual", presencial: "Presencial",
+    paySecure: "Pagamento Seguro", total: "Total a pagar", payBtn: "Pagar",
+    successTitle: "Pagamento realizado!", successSub: "Um especialista entrará em contato em 24 horas.",
+    confirmNum: "Número de confirmação",
+    forgotPass: "Esqueceu sua senha?", resetPassword: "Redefinir senha",
+    sendCode: "Enviar código", enterCode: "Inserir código", newPassword: "Nova senha",
+    codeDemo: "Código de recuperação (simulado — em produção chega por e-mail):",
+    backToLogin: "Voltar ao login", passwordChanged: "Senha redefinida!",
+    passwordChangedSub: "Agora você pode entrar com sua nova senha.",
+    clinicalHistory: "Histórico Clínico", aiDiagnosis: "Diagnóstico IA",
+    programs: "Programas", audios: "Áudios e Vídeos",
+    watchVideo: "Ver vídeo", playAudio: "Reproduzir",
+    footerPrivacy: "Política de privacidade", footerTerms: "Termos de uso",
+    footerCert: "Certificado pelo Ministério da Saúde",
+    footerServices: "Serviços", footerContact: "Contato", footerLinks: "Acesso rápido",
+    footerCrisis: "Linha de crise: 800-911-2000",
+    allRights: "Todos os direitos reservados",
+    includedInPlan: "Incluído no seu plano:",
+    videosInPlan: "Vídeos de auto-hipnose incluídos:",
+    audiosInPlan: "Áudios incluídos:",
   },
 };
 
@@ -331,47 +373,112 @@ function PrivateRoute({ children }: { children: React.ReactNode }) {
 const PROGRAMS = [
   {
     id: "mes1", nameKey: "month1" as const, price: 3200000, originalPrice: 4100000,
-    duration: "30 días", highlight: true, tag: "Más completo",
+    duration: "30 días", highlight: true, tag: "Inicio intensivo",
+    description: "Programa de estabilización y evaluación integral. Ideal para iniciar el tratamiento con acompañamiento médico completo.",
     sessions: [
       { name: "Consultas Psiquiatría", count: 2, icon: Brain, note: "IA + médico" },
-      { name: "Sesiones Psicología", count: 6, icon: MessageSquare, note: "Individual" },
-      { name: "Hipnosis Clínica", count: 4, icon: Sparkles, note: "Con el Dr." },
+      { name: "Sesiones Psicología", count: 6, icon: MessageSquare, note: "Individual virtual" },
+      { name: "Hipnosis Clínica", count: 4, icon: Sparkles, note: "Con el Dr. Escobar" },
       { name: "Auriculoterapia Láser", count: 4, icon: Zap, note: "Anti-craving" },
       { name: "Yoga & Mindfulness", count: 4, icon: Leaf, note: "Virtual" },
       { name: "Reuniones Grupales", count: 2, icon: Users, note: "Sem. 1 y 3" },
     ],
-    // Audios y videos que se desbloquean con este plan
     includedAudioIds: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12],
     includedVideoIds: [1, 2, 3, 4],
     includes: [
       "🎁 Video autohipnosis + música binaural (regalo bienvenida)",
-      "Evaluación psiquiátrica y toxicológica con IA",
-      "Historia clínica digital completa",
-      "Suero terapia con audio binaural",
+      "Evaluación psiquiátrica y toxicológica con IA Gemini",
+      "Historia clínica digital completa y consentimiento informado",
       "Biblioteca completa: 12 audios + 4 videos premium",
-      "Soporte por WhatsApp",
+      "Soporte por WhatsApp directo con el equipo",
     ],
   },
   {
-    id: "mes2", nameKey: "month2" as const, price: 1800000, originalPrice: 2400000,
-    duration: "30 días", highlight: false, tag: "Continuidad",
+    id: "mes2", nameKey: "month2" as const, price: 2800000, originalPrice: 3600000,
+    duration: "30 días", highlight: false, tag: "Profundización",
+    description: "Consolidación del proceso terapéutico con enfoque en hábitos saludables y manejo de recaídas.",
     sessions: [
-      { name: "Videos Autohipnosis", count: 6, icon: Video, note: "Nuevos c/mes" },
-      { name: "Sesiones Psicología", count: 4, icon: MessageSquare, note: "Individual" },
-      { name: "Yoga & Mindfulness", count: 2, icon: Leaf, note: "Virtual" },
-      { name: "Reuniones Grupales", count: 2, icon: Users, note: "Sem. 1 y 3" },
+      { name: "Consultas Psiquiatría", count: 2, icon: Brain, note: "Seguimiento" },
+      { name: "Hipnosis Clínica", count: 3, icon: Sparkles, note: "Con el Dr. Escobar" },
+      { name: "Yoga & Mindfulness", count: 4, icon: Leaf, note: "Full virtual" },
+      { name: "Psicología Virtual", count: 4, icon: MessageSquare, note: "Individual" },
+      { name: "Auriculoterapia Punta Romana", count: 4, icon: Zap, note: "Anti-ansiedad" },
+      { name: "Sesiones Grupales", count: 2, icon: Users, note: "Sem. 1 y 3" },
     ],
-    includedAudioIds: [1, 5, 9, 10, 11, 12],
+    includedAudioIds: [1, 2, 3, 5, 6, 7, 9, 10, 11, 12],
+    includedVideoIds: [1, 2, 3, 4, 5, 6],
+    includes: [
+      "Diagnóstico actualizado + consentimiento informado",
+      "Acceso al diagnóstico IA completo al momento del pago",
+      "Biblioteca completa de audios y videos",
+      "Soporte continuo por WhatsApp",
+    ],
+  },
+  {
+    id: "mes3", nameKey: "month3" as const, price: 2400000, originalPrice: 3200000,
+    duration: "30 días", highlight: false, tag: "Consolidación",
+    description: "Trabajo profundo en familia, manejo emocional avanzado y consolidación de la abstinencia.",
+    sessions: [
+      { name: "Hipnosis Clínica", count: 2, icon: Sparkles, note: "Con el Dr. Escobar" },
+      { name: "Psicología Virtual", count: 4, icon: MessageSquare, note: "Individual + pareja" },
+      { name: "Terapia Familiar", count: 1, icon: Users, note: "Sesión familiar virtual" },
+      { name: "Sesiones Grupales", count: 2, icon: Users, note: "Sem. 1 y 3" },
+      { name: "Yoga & Meditación Full", count: 4, icon: Leaf, note: "Completo virtual" },
+    ],
+    includedAudioIds: [1, 3, 5, 7, 9, 11, 12],
+    includedVideoIds: [1, 3, 5, 6],
+    includes: [
+      "Terapia familiar incluida",
+      "Plan de mantenimiento personalizado",
+      "Herramientas para manejo de recaídas",
+      "Biblioteca de audios y videos",
+    ],
+  },
+  {
+    id: "mes4", nameKey: "month4" as const, price: 2200000, originalPrice: 3000000,
+    duration: "30 días", highlight: false, tag: "Cierre & Bienestar",
+    description: "Integración holística completa: medicina alternativa, equilibrio energético y cierre del proceso de recuperación.",
+    sessions: [
+      { name: "Psicología Virtual", count: 2, icon: MessageSquare, note: "Individual" },
+      { name: "Terapia Familiar", count: 1, icon: Users, note: "Sesión familiar virtual" },
+      { name: "Hipnosis Clínica", count: 2, icon: Sparkles, note: "Con el Dr. Escobar" },
+      { name: "Yoga & Meditación", count: 4, icon: Leaf, note: "Programa completo" },
+      { name: "Medicina Holística", count: 1, icon: Heart, note: "Consulta integrativa" },
+      { name: "Inmunoterapia / Equilibrio Energético", count: 1, icon: Zap, note: "Especialista" },
+    ],
+    includedAudioIds: [1, 5, 9, 11, 12],
     includedVideoIds: [1, 5, 6],
     includes: [
-      "6 videos de autohipnosis personalizados (nuevos cada mes)",
-      "Música binaural con voz del médico",
-      "Continuidad de historia clínica",
-      "Podcasts semanales terapéuticos",
-      "Acceso a 6 audios seleccionados",
+      "Consulta de medicina holística e inmunoterapia",
+      "Plan de vida post-tratamiento",
+      "Certificado de proceso terapéutico completado",
+      "Acceso a meses 5 y 6 GRATIS al completar los 4 meses",
     ],
   },
 ];
+
+// Meses 5 y 6 — GRATIS al pagar los 4 meses completos
+const BONUS_MONTHS = {
+  mes5: {
+    tag: "Mes 5 — GRATIS",
+    sessions: [
+      { name: "Psicología Virtual", count: 1, icon: MessageSquare, note: "Mantenimiento" },
+      { name: "Hipnosis Clínica", count: 1, icon: Sparkles, note: "Refuerzo" },
+      { name: "Yoga & Meditación", count: 4, icon: Leaf, note: "Continúa" },
+    ],
+    note: "Incluido sin costo al completar los 4 meses del programa",
+  },
+  mes6: {
+    tag: "Mes 6 — GRATIS",
+    sessions: [
+      { name: "Terapia Familiar", count: 1, icon: Users, note: "Cierre familiar" },
+      { name: "Psicología Virtual", count: 1, icon: MessageSquare, note: "Seguimiento final" },
+      { name: "Herramientas abstinencia", count: 1, icon: Shield, note: "Plan de vida" },
+      { name: "Yoga & Meditación", count: 4, icon: Leaf, note: "Continúa libre" },
+    ],
+    note: "Incluido sin costo al completar los 4 meses del programa",
+  },
+};
 
 // ═══════════════════════════════════════════════════════
 // AUDIO LIBRARY
@@ -447,52 +554,124 @@ const SECTIONS = [
 type QType = "text" | "number" | "choice" | "multiselect" | "scale" | "textarea";
 interface Q { id: string; section: string; text: string; type: QType; options?: string[]; placeholder?: string }
 
+const RANGO_EDADES = ["Entre 14 y 18 años", "Entre 18 y 24 años", "De 24 a 36 años", "De 36 a 45 años", "De 45 a 60 años", "De 60 o más años"];
+
 const QUESTIONS: Q[] = [
+  // ── IDENTIFICACIÓN ──────────────────────────────────────
   { id: "nombre", section: "identificacion", type: "text", placeholder: "Nombre completo",
-    text: "Buenos días. Soy el asistente clínico del Consultorio Holístico.\n\nEsta conversación es confidencial y sus respuestas formarán parte de su expediente médico.\n\n¿Cuál es su nombre completo?" },
-  { id: "edad", section: "identificacion", type: "number", placeholder: "Edad en años", text: "¿Cuántos años tiene?" },
+    text: "Bienvenido/a. Soy el asistente clínico del Consultorio Holístico.\n\nEsta conversación es estrictamente confidencial y sus respuestas formarán parte de su expediente médico protegido bajo secreto profesional.\n\n¿Cuál es su nombre completo?" },
+  { id: "edad", section: "identificacion", type: "choice", text: "¿En qué rango de edad se encuentra?", options: RANGO_EDADES },
   { id: "estado_civil", section: "identificacion", type: "choice", text: "¿Cuál es su estado civil?",
     options: ["Soltero/a", "Casado/a", "Unión libre", "Divorciado/a", "Separado/a", "Viudo/a"] },
   { id: "escolaridad", section: "identificacion", type: "choice", text: "¿Cuál es su nivel de escolaridad?",
-    options: ["Sin escolaridad formal", "Primaria", "Secundaria", "Bachillerato", "Técnico", "Licenciatura", "Posgrado"] },
-  { id: "ocupacion", section: "identificacion", type: "text", placeholder: "Ej. Empleado, estudiante...", text: "¿Cuál es su ocupación actual?" },
-  { id: "motivo_consulta", section: "motivo", type: "textarea", placeholder: "Cuéntenos su situación...",
-    text: "¿Qué le trajo a esta consulta hoy? Descríbalo con sus propias palabras." },
+    options: ["Sin escolaridad formal", "Primaria", "Secundaria", "Bachillerato", "Técnico/Tecnólogo", "Universitario", "Posgrado"] },
+  { id: "ocupacion", section: "identificacion", type: "choice", text: "¿Cuál es su situación laboral actual?",
+    options: ["Empleado/a formal", "Trabajador/a independiente", "Estudiante", "Desempleado/a", "Pensionado/a", "Labores del hogar", "Incapacitado/a"] },
+
+  // ── MOTIVO DE CONSULTA ───────────────────────────────────
+  { id: "motivo_consulta", section: "motivo", type: "choice",
+    text: "¿Qué le trajo a esta consulta hoy?",
+    options: [
+      "Consumo de sustancias psicoactivas (drogas/alcohol)",
+      "Ansiedad o ataques de pánico",
+      "Depresión o tristeza persistente",
+      "Insomnio o alteraciones del sueño",
+      "Pensamientos obsesivos o compulsivos",
+      "Crisis emocional o situación de crisis",
+      "Problemas de conducta o control de impulsos",
+      "Dependencia a medicamentos (benzodiacepinas, opioides)",
+      "Trastorno de alimentación",
+      "Violencia o trauma psicológico",
+      "Problemas de pareja o familia relacionados con consumo",
+      "Remitido por orden judicial o médica",
+      "Búsqueda de bienestar y prevención",
+    ] },
   { id: "quien_sugirio", section: "motivo", type: "choice", text: "¿Quién le motivó a buscar atención?",
-    options: ["Decisión propia", "Familiar o pareja", "Amigo/a", "Médico", "Autoridad judicial", "Otro"] },
-  { id: "sustancias", section: "consumo", type: "multiselect", text: "¿Qué sustancias ha consumido alguna vez? Seleccione todas las que apliquen.",
-    options: ["Alcohol", "Tabaco", "Marihuana/Cannabis", "Cocaína/Crack", "Heroína/Opioides",
-      "Benzodiacepinas (sin prescripción)", "Anfetaminas", "Inhalantes", "Alucinógenos", "Otras"] },
-  { id: "edad_inicio", section: "consumo", type: "number", placeholder: "Edad", text: "¿A qué edad probó alguna sustancia por primera vez?" },
-  { id: "sustancia_principal", section: "consumo", type: "text", placeholder: "Ej. Alcohol, cocaína...", text: "¿Cuál es su sustancia principal de consumo?" },
+    options: ["Decisión propia", "Familiar o pareja", "Amigo/a", "Médico o profesional de salud", "Autoridad judicial", "Empleador", "Otro"] },
+
+  // ── HISTORIA DE CONSUMO ──────────────────────────────────
+  { id: "sustancias", section: "consumo", type: "multiselect",
+    text: "¿Qué sustancias ha consumido alguna vez? Seleccione todas las que apliquen.",
+    options: [
+      "Alcohol", "Cigarrillo / Tabaco", "Marihuana / Cannabis", "Cocaína", "Basuco / Crack",
+      "Heroína / Opioides", "Benzodiacepinas (sin prescripción)", "Anfetaminas / Metanfetaminas",
+      "Inhalantes (pegante, gasolina)", "Alucinógenos (LSD, hongos)", "Éxtasis / MDMA",
+      "Ketamina", "Poppers", "Dos de estas sustancias", "Todas las anteriores", "Otras",
+    ] },
+  { id: "edad_inicio", section: "consumo", type: "choice",
+    text: "¿A qué edad probó alguna sustancia por primera vez?", options: RANGO_EDADES },
+  { id: "sustancia_principal", section: "consumo", type: "choice",
+    text: "¿Cuál es su sustancia principal de consumo actualmente?",
+    options: ["Alcohol", "Cigarrillo / Tabaco", "Marihuana / Cannabis", "Cocaína", "Basuco / Crack",
+      "Heroína / Opioides", "Benzodiacepinas", "Anfetaminas", "Otras", "No consumo actualmente"] },
   { id: "frecuencia", section: "consumo", type: "choice", text: "¿Con qué frecuencia consume actualmente?",
-    options: ["Diariamente", "Varios días a la semana", "1–2 veces por semana", "Ocasionalmente", "No consumo actualmente"] },
-  { id: "ultimo_consumo", section: "consumo", type: "text", placeholder: "Ej. Ayer, hace 3 días...", text: "¿Cuándo fue la última vez que consumió?" },
-  { id: "craving", section: "consumo", type: "scale", text: "Escala del 1 al 10: ¿qué tan fuerte es su deseo de consumir ahora?\n\n1 = Ningún deseo · 10 = Deseo muy intenso" },
+    options: ["Varias veces al día", "Diariamente", "Varios días a la semana", "1–2 veces por semana", "Ocasionalmente (mensual o menos)", "No consumo actualmente"] },
+  { id: "ultimo_consumo", section: "consumo", type: "choice", text: "¿Cuándo fue la última vez que consumió?",
+    options: ["Hoy", "Esta semana", "Hace una semana", "Hace un mes", "Hace más de un mes", "Nunca he consumido"] },
+  { id: "craving", section: "consumo", type: "scale",
+    text: "Escala del 1 al 10: ¿qué tan fuerte es su deseo de consumir ahora?\n\n1 = Ningún deseo · 10 = Deseo muy intenso" },
+  { id: "abstinencia_escala", section: "consumo", type: "scale",
+    text: "Escala del 1 al 10: ¿qué tan intensos son sus síntomas de abstinencia en este momento?\n\n1 = Sin síntomas · 10 = Síntomas muy intensos (temblor, sudoración, náuseas, ansiedad)" },
   { id: "intentos_abandono", section: "consumo", type: "choice", text: "¿Ha intentado dejar de consumir anteriormente?",
-    options: ["Sí, varias veces", "Sí, una vez", "No, nunca"] },
-  { id: "abstinencia", section: "consumo", type: "choice", text: "¿Ha presentado síntomas de abstinencia al dejar de consumir?",
-    options: ["Sí, síntomas severos", "Sí, síntomas leves", "No", "No lo sé"] },
-  { id: "atencion_previa", section: "psiquiatrico", type: "choice", text: "¿Ha recibido atención psiquiátrica o psicológica?",
-    options: ["Sí, actualmente", "Sí, en el pasado", "No, nunca"] },
-  { id: "diagnosticos", section: "psiquiatrico", type: "multiselect", text: "¿Le han diagnosticado alguna de estas condiciones?",
-    options: ["Depresión", "Ansiedad", "Trastorno bipolar", "Psicosis/Esquizofrenia", "TDAH", "Trastorno de personalidad", "TEPT", "Ninguno", "Prefiero no responder"] },
-  { id: "medicacion", section: "psiquiatrico", type: "choice", text: "¿Toma medicamentos recetados para su salud mental?",
-    options: ["Sí, con regularidad", "Sí, irregularmente", "No"] },
-  { id: "ideacion", section: "psiquiatrico", type: "choice", text: "Pregunta importante para su seguridad.\n\n¿Ha tenido pensamientos de hacerse daño o quitarse la vida?",
+    options: ["Sí, varias veces", "Sí, una vez", "No, nunca lo he intentado"] },
+
+  // ── ANTECEDENTES PSIQUIÁTRICOS ───────────────────────────
+  { id: "atencion_psicologica", section: "psiquiatrico", type: "choice",
+    text: "¿Ha recibido atención psicológica anteriormente?",
+    options: ["Sí, actualmente estoy en proceso", "Sí, en el pasado (ya finalizado)", "Sí, pero no fue suficiente", "No, nunca"] },
+  { id: "atencion_psiquiatrica", section: "psiquiatrico", type: "choice",
+    text: "¿Ha recibido atención psiquiátrica (con psiquiatra o médico especialista)?",
+    options: ["Sí, actualmente con psiquiatra", "Sí, en el pasado", "Sí, estuve hospitalizado/a", "No, nunca"] },
+  { id: "diagnosticos", section: "psiquiatrico", type: "multiselect",
+    text: "¿Le han diagnosticado alguna de estas condiciones? Seleccione todas las que apliquen.",
+    options: ["Depresión mayor", "Trastorno de ansiedad generalizada", "Trastorno de pánico", "Trastorno bipolar",
+      "Psicosis / Esquizofrenia", "TDAH (déficit de atención)", "Trastorno de personalidad limítrofe (BPD)",
+      "Trastorno obsesivo compulsivo (TOC)", "TEPT (estrés postraumático)", "Trastorno de alimentación",
+      "Trastorno del sueño", "Ninguna de las anteriores"] },
+  { id: "medicacion", section: "psiquiatrico", type: "choice", text: "¿Toma actualmente medicamentos recetados para su salud mental?",
+    options: ["Sí, con regularidad y seguimiento médico", "Sí, pero de forma irregular", "Los tomaba pero los dejé", "No"] },
+  { id: "ideacion", section: "psiquiatrico", type: "choice",
+    text: "Pregunta importante para su seguridad.\n\n¿Ha tenido pensamientos de hacerse daño o quitarse la vida?",
     options: ["No, nunca", "En el pasado, no actualmente", "Actualmente tengo esos pensamientos"] },
-  { id: "enfermedades", section: "medico", type: "textarea", placeholder: "Describa o escriba \"Ninguna\"...",
-    text: "¿Tiene alguna enfermedad médica diagnosticada? (diabetes, hepatitis, VIH, etc.)" },
-  { id: "antecedentes_familiares", section: "medico", type: "choice", text: "¿Hay historial de adicciones o enfermedades mentales en su familia?",
+
+  // ── ANTECEDENTES MÉDICOS ─────────────────────────────────
+  { id: "enfermedades", section: "medico", type: "multiselect",
+    text: "¿Tiene alguna enfermedad médica diagnosticada? Seleccione todas las que apliquen.",
+    options: [
+      // Metabólicas
+      "Diabetes tipo 1 o 2", "Obesidad / Sobrepeso", "Hipotiroidismo / Hipertiroidismo", "Síndrome metabólico",
+      // Cardiovasculares
+      "Hipertensión arterial", "Enfermedad coronaria / Infarto", "Arritmia cardiaca", "Insuficiencia cardiaca",
+      // Hepáticas / Infecciosas
+      "Hepatitis B o C", "Cirrosis hepática", "VIH / SIDA", "Tuberculosis",
+      // Neurológicas
+      "Epilepsia / Convulsiones", "Migraña crónica", "Esclerosis múltiple",
+      // Respiratorias
+      "EPOC / Enfisema", "Asma", "Apnea del sueño",
+      // Otras
+      "Cáncer (activo o en remisión)", "Enfermedad renal crónica", "Ninguna de las anteriores",
+    ] },
+  { id: "antecedentes_familiares", section: "medico", type: "choice",
+    text: "¿Hay historial de adicciones o enfermedades mentales en su familia?",
     options: ["Sí, en varios familiares", "Sí, en algún familiar", "No que yo sepa", "No lo sé"] },
+  { id: "cuantos_familiares", section: "medico", type: "choice",
+    text: "¿En cuántos familiares conoce este antecedente?",
+    options: ["1 familiar", "2 familiares", "3 o más familiares", "No aplica"] },
+  { id: "cuales_familiares", section: "medico", type: "multiselect",
+    text: "¿Cuáles familiares tienen o tuvieron ese antecedente? Seleccione todos los que apliquen.",
+    options: ["Padre", "Madre", "Hermano/a", "Abuelo/a paterno/a", "Abuelo/a materno/a", "Tío/a", "Primo/a", "Hijo/a", "No aplica"] },
+
+  // ── SITUACIÓN SOCIAL ─────────────────────────────────────
   { id: "vivienda", section: "social", type: "choice", text: "¿Con quién vive actualmente?",
-    options: ["Solo/a", "Con pareja", "Con familia", "Con amigos", "En institución", "Sin hogar fijo"] },
+    options: ["Solo/a", "Con pareja", "Con familia (padres, hermanos)", "Con hijos", "Con amigos o compañeros", "En institución o albergue", "Sin hogar fijo"] },
   { id: "apoyo_social", section: "social", type: "choice", text: "¿Cuenta con apoyo familiar o social para su tratamiento?",
-    options: ["Sí, amplio apoyo", "Sí, apoyo limitado", "No tengo apoyo", "Mi familia no sabe"] },
-  { id: "estresores", section: "social", type: "multiselect", text: "¿Está enfrentando alguna de estas situaciones?",
-    options: ["Problemas económicos", "Problemas legales", "Violencia doméstica", "Desempleo", "Duelo/pérdida reciente", "Inestabilidad vivienda", "Ninguna"] },
+    options: ["Sí, tengo amplio apoyo", "Sí, apoyo limitado", "No tengo apoyo", "Mi familia no sabe que estoy buscando ayuda"] },
+  { id: "estresores", section: "social", type: "multiselect", text: "¿Está enfrentando alguna de estas situaciones actualmente?",
+    options: ["Problemas económicos graves", "Deudas relacionadas al consumo", "Problemas legales / judiciales", "Violencia doméstica o abuso", "Desempleo reciente", "Duelo o pérdida reciente", "Separación o divorcio", "Inestabilidad de vivienda", "Ninguna de las anteriores"] },
+
+  // ── CIERRE ───────────────────────────────────────────────
   { id: "informacion_adicional", section: "cierre", type: "textarea", placeholder: "Información adicional o escriba \"No\"...",
-    text: "Hemos completado la evaluación. Gracias por su confianza.\n\n¿Hay algo más que el equipo clínico deba saber sobre usted?" },
+    text: "Hemos completado la evaluación clínica. Gracias por su confianza y valentía.\n\n¿Hay algo más que el equipo clínico deba saber sobre usted para brindarle la mejor atención?" },
 ];
 
 // ═══════════════════════════════════════════════════════
@@ -621,6 +800,7 @@ function LangSwitcher() {
   const langs: { code: Lang; flag: string; label: string }[] = [
     { code: "es", flag: "🇨🇴", label: "Español" }, { code: "en", flag: "🇺🇸", label: "English" },
     { code: "fr", flag: "🇫🇷", label: "Français" }, { code: "de", flag: "🇩🇪", label: "Deutsch" },
+    { code: "pt", flag: "🇧🇷", label: "Português" },
   ];
   return (
     <div className="relative">
@@ -837,44 +1017,69 @@ function SiteFooter() {
 // CONTACT SECTION — formulario de sugerencias y citas
 // ═══════════════════════════════════════════════════════
 
+const WA_NUMBER = "573001234567"; // ← Reemplaza con el número real de WhatsApp de la clínica
+
 function ContactSection() {
-  const [form, setForm] = useState({ nombre: "", email: "", telefono: "", tipo: "", mensaje: "" });
-  const [status, setStatus] = useState<"idle" | "sending" | "sent" | "error">("idle");
-
+  const [form, setForm] = useState({ nombre: "", telefono: "", tipo: "", mensaje: "" });
   const set = (k: string, v: string) => setForm(f => ({ ...f, [k]: v }));
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!form.nombre || !form.email || !form.mensaje) return;
-    setStatus("sending");
-    // Demo: simula envío. En producción: fetch("/api/contacto", { method:"POST", body: JSON.stringify(form) })
-    await new Promise(r => setTimeout(r, 1200));
-    setStatus("sent");
-  };
 
   const tipos = [
     "Solicitud de cita médica",
-    "Información sobre programas",
+    "Información sobre programas de tratamiento",
+    "Consulta sobre adicciones",
+    "Consulta sobre salud mental",
     "Sugerencia o comentario",
     "Urgencia o crisis",
     "Otro",
   ];
 
+  const enviarWhatsApp = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!form.nombre || !form.mensaje) return;
+    const texto = [
+      `*Nueva solicitud — Cuídate Salud Plena*`,
+      `━━━━━━━━━━━━━━━━━━━━`,
+      `👤 *Nombre:* ${form.nombre}`,
+      form.telefono ? `📞 *Teléfono:* ${form.telefono}` : "",
+      `📋 *Tipo:* ${form.tipo || "General"}`,
+      `━━━━━━━━━━━━━━━━━━━━`,
+      `💬 *Mensaje:*`,
+      form.mensaje,
+      `━━━━━━━━━━━━━━━━━━━━`,
+      `_Enviado desde cuidatesaludplena.co_`,
+    ].filter(Boolean).join("\n");
+
+    const url = `https://wa.me/${WA_NUMBER}?text=${encodeURIComponent(texto)}`;
+    window.open(url, "_blank");
+  };
+
   return (
     <section id="contacto-form" className="py-20 px-4 bg-card/30">
       <div className="max-w-5xl mx-auto">
-        <p className="text-xs text-primary uppercase tracking-widest text-center mb-3" style={{ fontFamily: "'DM Mono', monospace" }}>Escríbenos</p>
-        <h2 className="text-3xl font-semibold text-center mb-3">¿En qué podemos ayudarte?</h2>
+        <p className="text-xs text-primary uppercase tracking-widest text-center mb-3" style={{ fontFamily: "'DM Mono', monospace" }}>Contáctanos</p>
+        <h2 className="text-3xl font-bold text-center mb-3" style={{ fontFamily: "'Plus Jakarta Sans', sans-serif" }}>¿En qué podemos ayudarte?</h2>
         <p className="text-sm text-muted-foreground text-center mb-12 max-w-lg mx-auto">
-          Déjanos tu mensaje, sugerencia o solicitud de cita y nuestro equipo se pondrá en contacto contigo a la brevedad.
+          Completa el formulario y te llevaremos directamente a WhatsApp. Respondemos en minutos.
         </p>
 
         <div className="grid md:grid-cols-5 gap-8">
           {/* Info lateral */}
-          <div className="md:col-span-2 space-y-5">
+          <div className="md:col-span-2 space-y-4">
+            {/* WhatsApp destacado */}
+            <a href={`https://wa.me/${WA_NUMBER}`} target="_blank" rel="noreferrer"
+              className="flex items-center gap-3.5 bg-emerald-500/10 border border-emerald-500/25 rounded-2xl p-4 group hover:bg-emerald-500/15 transition-colors">
+              <div className="w-12 h-12 rounded-xl bg-emerald-500/20 flex items-center justify-center shrink-0">
+                <MessageSquare className="w-6 h-6 text-emerald-400" />
+              </div>
+              <div>
+                <p className="text-xs text-emerald-400/70 uppercase tracking-wide mb-0.5" style={{ fontFamily: "'DM Mono', monospace" }}>WhatsApp — respuesta inmediata</p>
+                <p className="text-base font-bold text-emerald-400 group-hover:text-emerald-300 transition-colors">+57 300 123 4567</p>
+                <p className="text-[10px] text-muted-foreground mt-0.5">Lunes a sábado · 7am – 8pm</p>
+              </div>
+            </a>
+
             {[
               { icon: Phone, label: "Teléfono", value: "800-HOLISTIC", href: "tel:800-HOLISTIC" },
-              { icon: MessageSquare, label: "WhatsApp", value: "+57 300 123 4567", href: "https://wa.me/573001234567" },
               { icon: Mail, label: "Correo", value: "info@cuidatesaludplena.co", href: "mailto:info@cuidatesaludplena.co" },
               { icon: Instagram, label: "Instagram", value: "@cuidatemedellin", href: "https://www.instagram.com/cuidatemedellin/" },
             ].map(({ icon: Icon, label, value, href }) => (
@@ -890,77 +1095,69 @@ function ContactSection() {
               </a>
             ))}
 
-            <div className="bg-amber-500/8 border border-amber-500/20 rounded-xl p-4 mt-2">
+            <div className="bg-amber-500/8 border border-amber-500/20 rounded-xl p-4">
               <div className="flex items-center gap-2 mb-1.5">
                 <AlertTriangle className="w-3.5 h-3.5 text-amber-400 shrink-0" />
                 <p className="text-xs font-medium text-amber-400">Línea de crisis 24/7</p>
               </div>
-              <p className="text-xs text-muted-foreground">Si tú o alguien que conoces está en crisis, llama ahora:</p>
-              <a href="tel:800-911-2000" className="text-sm font-bold text-amber-400 hover:text-amber-300 transition-colors mt-1 block">800-911-2000</a>
+              <p className="text-xs text-muted-foreground mb-1">Si estás en crisis, llama ahora:</p>
+              <a href="tel:800-911-2000" className="text-sm font-bold text-amber-400 hover:text-amber-300 transition-colors">800-911-2000</a>
             </div>
           </div>
 
-          {/* Formulario */}
+          {/* Formulario → WhatsApp */}
           <div className="md:col-span-3">
-            {status === "sent" ? (
-              <div className="h-full flex flex-col items-center justify-center text-center bg-card border border-emerald-500/25 rounded-2xl p-10">
-                <div className="w-14 h-14 rounded-2xl bg-emerald-500/15 border border-emerald-500/25 flex items-center justify-center mb-4">
-                  <Check className="w-7 h-7 text-emerald-400" />
-                </div>
-                <h3 className="text-lg font-semibold mb-2">¡Mensaje enviado!</h3>
-                <p className="text-sm text-muted-foreground mb-6 max-w-xs">Recibimos tu solicitud. Nuestro equipo te contactará en las próximas 24 horas hábiles.</p>
-                <button onClick={() => { setStatus("idle"); setForm({ nombre: "", email: "", telefono: "", tipo: "", mensaje: "" }); }}
-                  className="px-5 py-2 rounded-xl border border-border text-sm hover:border-primary/40 transition-colors">
-                  Enviar otro mensaje
-                </button>
-              </div>
-            ) : (
-              <form onSubmit={handleSubmit} className="bg-card border border-border rounded-2xl p-6 space-y-4">
-                <div className="grid sm:grid-cols-2 gap-4">
-                  <div>
-                    <label className="text-[10px] text-muted-foreground uppercase tracking-widest block mb-1.5" style={{ fontFamily: "'DM Mono', monospace" }}>Nombre completo *</label>
-                    <input value={form.nombre} onChange={e => set("nombre", e.target.value)} required placeholder="Tu nombre"
-                      className="w-full bg-muted border border-border rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-primary/50 transition-all placeholder:text-muted-foreground/40" />
-                  </div>
-                  <div>
-                    <label className="text-[10px] text-muted-foreground uppercase tracking-widest block mb-1.5" style={{ fontFamily: "'DM Mono', monospace" }}>Teléfono</label>
-                    <input value={form.telefono} onChange={e => set("telefono", e.target.value)} placeholder="+57 300 000 0000" type="tel"
-                      className="w-full bg-muted border border-border rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-primary/50 transition-all placeholder:text-muted-foreground/40" />
-                  </div>
+            <form onSubmit={enviarWhatsApp} className="bg-card border border-border rounded-2xl p-6 space-y-4">
+              <div className="flex items-center gap-2 mb-1 pb-4 border-b border-border">
+                <div className="w-8 h-8 rounded-lg bg-emerald-500/15 flex items-center justify-center">
+                  <MessageSquare className="w-4 h-4 text-emerald-400" />
                 </div>
                 <div>
-                  <label className="text-[10px] text-muted-foreground uppercase tracking-widest block mb-1.5" style={{ fontFamily: "'DM Mono', monospace" }}>Correo electrónico *</label>
-                  <input value={form.email} onChange={e => set("email", e.target.value)} required type="email" placeholder="tucorreo@email.com"
+                  <p className="text-sm font-semibold">Enviar por WhatsApp</p>
+                  <p className="text-[10px] text-muted-foreground">El formulario abre WhatsApp con tu mensaje listo</p>
+                </div>
+              </div>
+
+              <div className="grid sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="text-[10px] text-muted-foreground uppercase tracking-widest block mb-1.5" style={{ fontFamily: "'DM Mono', monospace" }}>Nombre completo *</label>
+                  <input value={form.nombre} onChange={e => set("nombre", e.target.value)} required placeholder="Tu nombre"
                     className="w-full bg-muted border border-border rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-primary/50 transition-all placeholder:text-muted-foreground/40" />
                 </div>
                 <div>
-                  <label className="text-[10px] text-muted-foreground uppercase tracking-widest block mb-1.5" style={{ fontFamily: "'DM Mono', monospace" }}>Tipo de solicitud</label>
-                  <select value={form.tipo} onChange={e => set("tipo", e.target.value)}
-                    className="w-full bg-muted border border-border rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-primary/50 transition-all text-foreground">
-                    <option value="">Selecciona una opción...</option>
-                    {tipos.map(t => <option key={t} value={t}>{t}</option>)}
-                  </select>
+                  <label className="text-[10px] text-muted-foreground uppercase tracking-widest block mb-1.5" style={{ fontFamily: "'DM Mono', monospace" }}>Teléfono (opcional)</label>
+                  <input value={form.telefono} onChange={e => set("telefono", e.target.value)} placeholder="+57 300 000 0000" type="tel"
+                    className="w-full bg-muted border border-border rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-primary/50 transition-all placeholder:text-muted-foreground/40" />
                 </div>
-                <div>
-                  <label className="text-[10px] text-muted-foreground uppercase tracking-widest block mb-1.5" style={{ fontFamily: "'DM Mono', monospace" }}>Mensaje *</label>
-                  <textarea value={form.mensaje} onChange={e => set("mensaje", e.target.value)} required rows={4}
-                    placeholder="Cuéntanos cómo podemos ayudarte, qué servicio te interesa o déjanos tu sugerencia..."
-                    className="w-full bg-muted border border-border rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-primary/50 transition-all placeholder:text-muted-foreground/40 resize-none" />
-                </div>
-                {status === "error" && (
-                  <p className="text-xs text-destructive">Hubo un error al enviar. Por favor intenta de nuevo.</p>
-                )}
-                <button type="submit" disabled={status === "sending" || !form.nombre || !form.email || !form.mensaje}
-                  className="w-full py-3 rounded-xl bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 transition-all disabled:opacity-50 flex items-center justify-center gap-2">
-                  {status === "sending"
-                    ? <><Loader2 className="w-4 h-4 animate-spin" />Enviando...</>
-                    : <><Send className="w-4 h-4" />Enviar mensaje</>}
-                </button>
-                <p className="text-[10px] text-muted-foreground/40 text-center" style={{ fontFamily: "'DM Mono', monospace" }}>
-                  Tu información es confidencial · No compartimos tus datos
-                </p>
-              </form>
-            )}
+              </div>
+
+              <div>
+                <label className="text-[10px] text-muted-foreground uppercase tracking-widest block mb-1.5" style={{ fontFamily: "'DM Mono', monospace" }}>Tipo de solicitud</label>
+                <select value={form.tipo} onChange={e => set("tipo", e.target.value)}
+                  className="w-full bg-muted border border-border rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-primary/50 transition-all text-foreground">
+                  <option value="">Selecciona una opción...</option>
+                  {tipos.map(t => <option key={t} value={t}>{t}</option>)}
+                </select>
+              </div>
+
+              <div>
+                <label className="text-[10px] text-muted-foreground uppercase tracking-widest block mb-1.5" style={{ fontFamily: "'DM Mono', monospace" }}>Mensaje *</label>
+                <textarea value={form.mensaje} onChange={e => set("mensaje", e.target.value)} required rows={4}
+                  placeholder="Cuéntanos cómo podemos ayudarte, qué servicio te interesa o déjanos tu consulta..."
+                  className="w-full bg-muted border border-border rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-primary/50 transition-all placeholder:text-muted-foreground/40 resize-none" />
+              </div>
+
+              <button type="submit" disabled={!form.nombre || !form.mensaje}
+                className="w-full py-3.5 rounded-xl text-sm font-semibold transition-all disabled:opacity-40 flex items-center justify-center gap-2 shadow-lg"
+                style={{ background: "linear-gradient(135deg, #25D366, #128C7E)", color: "#fff" }}>
+                <MessageSquare className="w-4 h-4" />
+                Enviar por WhatsApp ahora
+              </button>
+
+              <p className="text-[10px] text-muted-foreground/40 text-center" style={{ fontFamily: "'DM Mono', monospace" }}>
+                Se abrirá WhatsApp con tu mensaje · Respuesta en minutos · Confidencial
+              </p>
+            </form>
           </div>
         </div>
       </div>
@@ -1627,6 +1824,9 @@ interface Msg { id: string; role: "bot" | "user"; content: string; ts: number; i
 function HistoriaPage() {
   const navigate = useNavigate();
   const { user } = useAuth();
+  const [consentAceptado, setConsentAceptado] = useState(() =>
+    localStorage.getItem("ch_consent_accepted") === "true"
+  );
   const [msgs, setMsgs] = useState<Msg[]>([]);
   const [answers, setAnswers] = useState<Map<string, string | string[]>>(new Map());
   const [qIdx, setQIdx] = useState(0);
@@ -1635,12 +1835,91 @@ function HistoriaPage() {
   const bottomRef = useRef<HTMLDivElement>(null);
   const currentQ = QUESTIONS[qIdx];
 
+  // All hooks must come before any conditional return
   useEffect(() => {
+    if (!consentAceptado) return;
     const greeting = user ? `Hola, ${user.name.split(" ")[0]}. ` : "";
     setMsgs([{ id: "init", role: "bot", ts: Date.now(), content: greeting + QUESTIONS[0].text }]);
-  }, []);
+  }, [consentAceptado]);
   useEffect(() => { bottomRef.current?.scrollIntoView({ behavior: "smooth" }); }, [msgs, isTyping]);
   useEffect(() => { setText(""); setSelected([]); setScaleVal(null); }, [qIdx]);
+
+  function aceptarConsent() {
+    localStorage.setItem("ch_consent_accepted", "true");
+    setConsentAceptado(true);
+  }
+
+  // Mostrar consentimiento informado antes de iniciar la historia
+  if (!consentAceptado) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center px-4 py-10" style={{ fontFamily: "'Plus Jakarta Sans', 'DM Sans', sans-serif" }}>
+        <div className="w-full max-w-2xl bg-card border border-border rounded-3xl overflow-hidden shadow-2xl">
+          {/* Encabezado */}
+          <div className="bg-primary/10 border-b border-primary/20 px-7 py-5 flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-primary/20 border border-primary/30 flex items-center justify-center shrink-0">
+              <ClipboardList className="w-5 h-5 text-primary" />
+            </div>
+            <div>
+              <p className="text-xs text-primary uppercase tracking-widest mb-0.5" style={{ fontFamily: "'DM Mono', monospace" }}>Documento médico · Obligatorio</p>
+              <h2 className="font-bold text-lg">Consentimiento Informado</h2>
+            </div>
+          </div>
+
+          {/* Cuerpo */}
+          <div className="px-7 py-6 space-y-4 max-h-[60vh] overflow-y-auto">
+            <div className="bg-primary/5 border border-primary/15 rounded-xl p-4">
+              <p className="text-sm font-semibold text-primary mb-1">Clínica Virtual · Consultorio Holístico para Adicciones y Salud Mental</p>
+              <p className="text-xs text-muted-foreground">Dr. Nikolas Escobar — Director Médico</p>
+            </div>
+
+            <p className="text-sm text-foreground/80 leading-relaxed">
+              Yo, el/la paciente, manifiesto libre y voluntariamente mi consentimiento para iniciar el proceso de evaluación clínica y eventual tratamiento en el <strong>Consultorio Holístico Cuídate Salud Plena</strong>.
+            </p>
+
+            <div className="space-y-3">
+              {[
+                { title: "1. Confidencialidad", body: "Toda la información que proporcione es estrictamente confidencial y está protegida por el secreto médico profesional, conforme a la Ley 1581 de 2012 (Protección de Datos Personales) y la Resolución 1995 de 1999 del Ministerio de Salud de Colombia." },
+                { title: "2. Finalidad clínica", body: "Las respuestas de la historia clínica serán procesadas por inteligencia artificial (Gemini AI) y revisadas por el Dr. Escobar para generar un diagnóstico preliminar y recomendar el plan terapéutico más adecuado." },
+                { title: "3. Almacenamiento de datos", body: "Su información clínica se almacenará de forma segura en nuestra plataforma digital cifrada. No será compartida con terceros sin su autorización expresa, salvo en casos de riesgo vital inminente." },
+                { title: "4. Voluntariedad", body: "Su participación es completamente voluntaria. Puede detener el proceso en cualquier momento y solicitar la eliminación de sus datos comunicándose con nuestro equipo." },
+                { title: "5. Diagnóstico asistido por IA", body: "El diagnóstico generado por inteligencia artificial es una herramienta de apoyo clínico y NO reemplaza la evaluación presencial del médico. Será validado y complementado por el Dr. Escobar." },
+                { title: "6. Derechos del paciente", body: "Tiene derecho a acceder, rectificar o eliminar su información en cualquier momento. Para ejercer estos derechos, escribanos por WhatsApp o al correo de la clínica." },
+              ].map(item => (
+                <div key={item.title} className="bg-muted/30 border border-border rounded-xl p-4">
+                  <p className="text-xs font-semibold text-primary mb-1">{item.title}</p>
+                  <p className="text-xs text-muted-foreground leading-relaxed">{item.body}</p>
+                </div>
+              ))}
+            </div>
+
+            <div className="bg-amber-500/10 border border-amber-500/25 rounded-xl p-4 flex gap-3">
+              <AlertTriangle className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
+              <p className="text-xs text-amber-300/90 leading-relaxed">
+                Si en cualquier momento experimenta una emergencia de salud mental, llame inmediatamente a la <strong>Línea de la Vida: 800-911-2000</strong> o al número de emergencias <strong>123</strong>.
+              </p>
+            </div>
+          </div>
+
+          {/* Pie */}
+          <div className="px-7 py-5 border-t border-border bg-muted/20">
+            <p className="text-xs text-muted-foreground mb-4 text-center">
+              Al hacer clic en <strong>"Acepto y continúo"</strong> confirma que ha leído y acepta los términos del presente consentimiento informado.
+            </p>
+            <div className="flex gap-3">
+              <button onClick={() => navigate("/")} className="flex-1 py-3 rounded-xl border border-border text-sm text-muted-foreground hover:border-primary/30 transition-colors">
+                Volver al inicio
+              </button>
+              <button onClick={aceptarConsent}
+                className="flex-1 py-3 rounded-xl text-sm font-semibold transition-all flex items-center justify-center gap-2 shadow-lg shadow-primary/20"
+                style={{ background: "linear-gradient(135deg, #0ccec6, #07a8a2)", color: "#031014" }}>
+                <Check className="w-4 h-4" /> Acepto y continúo
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   function addMsg(m: Omit<Msg, "id">) { setMsgs(p => [...p, { ...m, id: `${m.role}-${Date.now()}-${Math.random()}` }]); }
 
@@ -1950,7 +2229,24 @@ function TreatmentsPage() {
           </div>
         </div>
 
-        <div className="grid md:grid-cols-2 gap-6 mb-10">
+        {/* Banner total ahorros si compra los 4 meses */}
+        <div className="bg-gradient-to-r from-primary/15 via-teal-500/10 to-primary/5 border border-primary/30 rounded-2xl p-5 mb-8 flex flex-col md:flex-row items-start md:items-center gap-4">
+          <div className="w-10 h-10 rounded-xl bg-primary/20 border border-primary/30 flex items-center justify-center shrink-0">
+            <Gift className="w-5 h-5 text-primary" />
+          </div>
+          <div className="flex-1">
+            <p className="text-xs font-bold text-primary uppercase tracking-widest mb-1" style={{ fontFamily: "'DM Mono', monospace" }}>Oferta programa completo</p>
+            <p className="text-sm font-semibold">Al completar los 4 meses — <span className="text-primary">Meses 5 y 6 completamente GRATIS</span></p>
+            <p className="text-xs text-muted-foreground mt-0.5">Ahorra $6.200.000 adicionales + continuidad terapéutica garantizada durante 6 meses</p>
+          </div>
+          <div className="text-right shrink-0">
+            <p className="text-[10px] text-muted-foreground line-through">$13.300.000</p>
+            <p className="text-xl font-bold text-primary">$10.600.000</p>
+            <p className="text-[10px] text-emerald-400">4 meses + 2 gratis</p>
+          </div>
+        </div>
+
+        <div className="grid md:grid-cols-2 gap-6 mb-8">
           {PROGRAMS.map(prog => (
             <div key={prog.id} className={clsx("bg-card border rounded-2xl overflow-hidden relative", prog.highlight ? "border-primary/40" : "border-border")}>
               {prog.highlight && <div className="absolute top-0 inset-x-0 h-0.5 bg-gradient-to-r from-transparent via-primary to-transparent" />}
@@ -2018,6 +2314,43 @@ function TreatmentsPage() {
               </div>
             </div>
           ))}
+        </div>
+
+        {/* Meses 5 y 6 GRATIS */}
+        <div className="rounded-2xl border-2 border-dashed border-primary/30 bg-primary/3 overflow-hidden mb-8">
+          <div className="px-6 py-4 border-b border-primary/20 flex items-center gap-3">
+            <div className="w-8 h-8 rounded-lg bg-primary/15 border border-primary/25 flex items-center justify-center shrink-0">
+              <Gift className="w-4 h-4 text-primary" />
+            </div>
+            <div>
+              <p className="text-xs font-bold text-primary uppercase tracking-widest" style={{ fontFamily: "'DM Mono', monospace" }}>Incluido sin costo adicional</p>
+              <p className="text-sm font-semibold">Meses 5 y 6 — GRATIS al completar el programa</p>
+            </div>
+            <span className="ml-auto text-xs bg-emerald-500/15 text-emerald-400 border border-emerald-500/25 px-3 py-1 rounded-full font-medium shrink-0">Valor: $6.200.000</span>
+          </div>
+          <div className="grid md:grid-cols-2 gap-0 divide-y md:divide-y-0 md:divide-x divide-border">
+            {Object.entries(BONUS_MONTHS).map(([key, bonus]) => (
+              <div key={key} className="p-5">
+                <div className="flex items-center gap-2 mb-3">
+                  <span className="text-[10px] font-bold bg-emerald-500/15 text-emerald-400 border border-emerald-500/20 px-2.5 py-1 rounded-full uppercase tracking-wider" style={{ fontFamily: "'DM Mono', monospace" }}>{bonus.tag}</span>
+                </div>
+                <div className="space-y-2">
+                  {bonus.sessions.map((s, i) => (
+                    <div key={i} className="flex items-center gap-2.5 bg-muted/30 rounded-xl p-2.5">
+                      <div className="w-7 h-7 rounded-lg bg-emerald-500/10 flex items-center justify-center shrink-0">
+                        <s.icon className="w-3.5 h-3.5 text-emerald-400" />
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <p className="text-xs font-medium">{s.count}× {s.name}</p>
+                        <p className="text-[10px] text-muted-foreground">{s.note}</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                <p className="text-[10px] text-muted-foreground/60 mt-3 italic">{bonus.note}</p>
+              </div>
+            ))}
+          </div>
         </div>
 
         {/* Servicios adicionales */}
