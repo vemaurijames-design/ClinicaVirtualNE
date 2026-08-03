@@ -783,6 +783,33 @@ function getAck(q: Q, answer: string | string[]): string | null {
 }
 
 async function callGemini(answers: Record<string, string>, apiKey: string): Promise<any> {
+  const BACKEND = (import.meta.env.VITE_API_URL as string) || "http://localhost:8080";
+  const jwt = localStorage.getItem("ch_jwt") || "";
+
+  // ── OPCIÓN 1: Llamar al backend Java (recomendado — la API key queda segura en el servidor)
+  try {
+    const backendRes = await fetch(`${BACKEND}/api/diagnostico/ia`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        ...(jwt ? { Authorization: `Bearer ${jwt}` } : {}),
+      },
+      body: JSON.stringify({ respuestas: answers, historiaId: localStorage.getItem("ch_historia_id") ? Number(localStorage.getItem("ch_historia_id")) : null }),
+    });
+    if (backendRes.ok) {
+      const backendJson = await backendRes.json();
+      if (backendJson.success && backendJson.data) {
+        const raw = typeof backendJson.data === "string" ? backendJson.data : JSON.stringify(backendJson.data);
+        return JSON.parse(raw.replace(/```json?\n?/g, "").replace(/```/g, "").trim());
+      }
+    }
+  } catch {
+    // Backend no disponible → usar Gemini directo como fallback
+  }
+
+  // ── OPCIÓN 2: Fallback — llamar a Gemini directamente (requiere API key en frontend)
+  if (!apiKey) throw new Error("Configure VITE_GEMINI_API_KEY en el .env o inicie el backend con la clave Gemini.");
+
   const f = (id: string) => (answers[id] || "No respondido").replace(/"/g, "'");
 
   const prompt = `Eres el Dr. Nikolas Escobar, psiquiatra especialista en adicciones y salud mental con 15 años de experiencia en medicina holística. Recibes la historia clínica de un paciente que busca tratamiento para adicciones y/o enfermedad mental.
@@ -825,44 +852,18 @@ Responde ÚNICAMENTE con este JSON válido, sin texto adicional:
   "resumen": "Párrafo clínico de 4-5 oraciones que describe el cuadro clínico completo, patrón de consumo, estado mental actual y factores de riesgo/protección",
   "nivel_riesgo": "BAJO|MEDIO|ALTO|CRÍTICO",
   "nivel_riesgo_justificacion": "Explicación clínica de 1-2 oraciones del nivel de riesgo asignado",
-  "diagnosticos": [
-    {
-      "codigo": "F10.2",
-      "nombre": "Nombre diagnóstico DSM-5/CIE-11",
-      "descripcion": "Descripción de cómo se manifiesta en este paciente específico"
-    }
-  ],
-  "comorbilidades": "Descripción de comorbilidades psiquiátricas identificadas (depresión, ansiedad, trauma, etc.) o 'Sin comorbilidades evidentes'",
-  "especialistas": [
-    {
-      "especialidad": "Nombre del especialista",
-      "prioridad": "URGENTE|PRIORITARIO|RECOMENDADO",
-      "razon": "Razón clínica específica para este paciente"
-    }
-  ],
-  "recomendaciones_inmediatas": [
-    "Recomendación clínica 1 concreta y accionable",
-    "Recomendación 2",
-    "Recomendación 3",
-    "Recomendación 4"
-  ],
-  "plan_tratamiento": {
-    "primera_linea": "Tratamiento farmacológico y/o terapéutico principal recomendado",
-    "segunda_linea": "Terapias complementarias holísticas: hipnosis, auriculoterapia, yoga, binaural",
-    "seguimiento": "Frecuencia y plan de seguimiento clínico mensual"
-  },
-  "toxicologia": "Evaluación toxicológica detallada: perfil de sustancias, dependencia física vs psicológica, riesgo de síndrome de abstinencia, necesidad de desintoxicación supervisada, interacciones con medicamentos",
+  "diagnosticos": [{"codigo": "F10.2","nombre": "Nombre diagnóstico DSM-5/CIE-11","descripcion": "Descripción de cómo se manifiesta en este paciente específico"}],
+  "comorbilidades": "Descripción de comorbilidades o 'Sin comorbilidades evidentes'",
+  "especialistas": [{"especialidad": "Nombre del especialista","prioridad": "URGENTE|PRIORITARIO|RECOMENDADO","razon": "Razón clínica"}],
+  "recomendaciones_inmediatas": ["Recomendación 1","Recomendación 2","Recomendación 3","Recomendación 4"],
+  "plan_tratamiento": {"primera_linea": "","segunda_linea": "","seguimiento": ""},
+  "toxicologia": "Evaluación toxicológica detallada",
   "programa_recomendado": "mes1|mes2",
-  "programa_justificacion": "Explicación clínica de 2-3 oraciones de por qué este programa específico es el más adecuado para el paciente",
-  "servicios_adicionales_recomendados": ["Suero Terapia + Audio Binaural|razón clínica", "Consulta Toxicológica IA|razón"],
-  "mensaje_al_paciente": "Mensaje empático y motivador de 2-3 oraciones dirigido directamente al paciente, en primera persona del doctor, que lo invite a iniciar el tratamiento"
+  "programa_justificacion": "Explicación clínica",
+  "servicios_adicionales_recomendados": ["Suero Terapia + Audio Binaural|razón clínica"],
+  "mensaje_al_paciente": "Mensaje empático y motivador del doctor al paciente"
 }`;
 
-  // BACKEND JAVA: cambia este fetch por:
-  // const res = await fetch(`${import.meta.env.VITE_API_BASE}/api/diagnostico/ia`, {
-  //   method: "POST", headers: { "Content-Type": "application/json" },
-  //   body: JSON.stringify({ answers }),
-  // });
   const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`, {
     method: "POST", headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
@@ -2042,6 +2043,19 @@ function HistoriaPage() {
         const flat: Record<string, string> = {};
         newAnswers.forEach((v, k) => { flat[k] = Array.isArray(v) ? v.join(", ") : v; });
         localStorage.setItem("ch_answers", JSON.stringify(flat));
+        // Guardar historia en el backend Java (silencioso, no bloquea la navegación)
+        const BACKEND = (import.meta.env.VITE_API_URL as string) || "http://localhost:8080";
+        const jwt = localStorage.getItem("ch_jwt") || "";
+        fetch(`${BACKEND}/api/historia`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            ...(jwt ? { Authorization: `Bearer ${jwt}` } : {}),
+          },
+          body: JSON.stringify({ respuestas: flat, consentimientoAceptado: true }),
+        }).then(r => r.json()).then(j => {
+          if (j.success && j.data?.id) localStorage.setItem("ch_historia_id", String(j.data.id));
+        }).catch(() => { /* backend no disponible — continúa con localStorage */ });
         setTimeout(() => { addMsg({ role: "bot", ts: Date.now(), content: "✓ Evaluación completada. Redirigiendo al análisis diagnóstico con IA..." }); setTimeout(() => navigate("/diagnostico"), 1500); }, 600);
         return;
       }
@@ -2173,6 +2187,7 @@ function DiagnosisPage() {
   const [diagnosis, setDiagnosis] = useState<any>(null);
   const [loading, setLoading] = useState(true); const [error, setError] = useState("");
   const [apiKey, setApiKey] = useState(import.meta.env.VITE_GEMINI_API_KEY || ""); const [keyInput, setKeyInput] = useState("");
+  const [backendAvailable, setBackendAvailable] = useState(true);
   const answers: Record<string, string> = JSON.parse(localStorage.getItem("ch_answers") || "{}");
   const hasAnswers = Object.keys(answers).length > 0;
   const riskColors: Record<string, string> = { BAJO: "text-emerald-400 bg-emerald-500/10 border-emerald-500/25", MEDIO: "text-amber-400 bg-amber-500/10 border-amber-500/25", ALTO: "text-orange-400 bg-orange-500/10 border-orange-500/25", CRÍTICO: "text-red-400 bg-red-500/10 border-red-500/25" };
@@ -2180,14 +2195,27 @@ function DiagnosisPage() {
 
   async function runDiagnosis(key: string) {
     setLoading(true); setError("");
-    try { const result = await callGemini(answers, key); setDiagnosis(result); setApiKey(key); }
-    catch (e: any) { setError(e.message || "Error con Gemini. Verifique su API key."); }
-    finally { setLoading(false); }
+    try {
+      const result = await callGemini(answers, key);
+      setDiagnosis(result);
+      if (key) setApiKey(key);
+    } catch (e: any) {
+      const msg: string = e.message || "";
+      if (msg.includes("VITE_GEMINI_API_KEY") || msg.includes("API key")) {
+        setBackendAvailable(false);
+        setLoading(false);
+        return;
+      }
+      setError(msg || "Error al generar diagnóstico. Verifique la API key o el backend.");
+    } finally {
+      setLoading(false);
+    }
   }
-  useEffect(() => { if (hasAnswers && apiKey) runDiagnosis(apiKey); else if (!apiKey) setLoading(false); }, []);
+  // Al cargar: intentar siempre (callGemini prueba backend primero, luego directo con key)
+  useEffect(() => { if (hasAnswers) runDiagnosis(apiKey); else setLoading(false); }, []);
 
   if (!hasAnswers) return <div className="flex items-center justify-center min-h-screen bg-background" style={{ fontFamily: "'Plus Jakarta Sans', 'DM Sans', sans-serif" }}><div className="text-center max-w-sm"><ClipboardList className="w-12 h-12 text-muted-foreground/30 mx-auto mb-4"/><h2 className="font-medium mb-2">Sin historia clínica</h2><p className="text-sm text-muted-foreground mb-6">Complete primero la evaluación clínica.</p><button onClick={()=>navigate("/historia")} className="px-5 py-2.5 rounded-xl bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 transition-colors">Ir a evaluación</button></div></div>;
-  if (!apiKey && !loading) return (
+  if (!backendAvailable && !apiKey && !loading) return (
     <div className="min-h-screen bg-background flex items-center justify-center px-4" style={{ fontFamily: "'Plus Jakarta Sans', 'DM Sans', sans-serif" }}>
       <div className="w-full max-w-sm bg-card border border-border rounded-2xl p-7">
         <div className="w-10 h-10 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center mb-4"><Sparkles className="w-5 h-5 text-primary"/></div>
@@ -2893,6 +2921,40 @@ function VideoModal({ video, onClose, t }: { video: VideoItem; onClose: () => vo
 }
 
 // ═══════════════════════════════════════════════════════
+// WHATSAPP FLOATING BUTTON — visible en toda la app
+// ═══════════════════════════════════════════════════════
+
+function WhatsAppFloat() {
+  const [visible, setVisible] = useState(false);
+  useEffect(() => {
+    const t = setTimeout(() => setVisible(true), 2000);
+    return () => clearTimeout(t);
+  }, []);
+
+  if (!visible) return null;
+  return (
+    <a
+      href={`https://wa.me/${WA_NUMBER}?text=${encodeURIComponent("Hola, vengo desde la web del Consultorio Holístico Cuídate Salud Plena. Quisiera información sobre sus servicios.")}`}
+      target="_blank"
+      rel="noreferrer"
+      className="fixed bottom-5 right-5 z-50 flex items-center gap-2.5 bg-emerald-500 hover:bg-emerald-600 text-white rounded-full shadow-xl shadow-emerald-500/30 transition-all hover:scale-105 active:scale-95 group"
+      style={{ padding: "12px 18px 12px 14px" }}
+      title="Chatear por WhatsApp"
+    >
+      {/* Ícono WhatsApp SVG */}
+      <svg viewBox="0 0 24 24" className="w-5 h-5 fill-current shrink-0" xmlns="http://www.w3.org/2000/svg">
+        <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
+      </svg>
+      <span className="text-sm font-medium whitespace-nowrap">Chatea ahora</span>
+      {/* Ping animado */}
+      <span className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full">
+        <span className="absolute inset-0 bg-red-400 rounded-full animate-ping opacity-75" />
+      </span>
+    </a>
+  );
+}
+
+// ═══════════════════════════════════════════════════════
 // APP ROUTER
 // ═══════════════════════════════════════════════════════
 
@@ -2912,6 +2974,7 @@ export default function App() {
               <Route path="/audios" element={<PrivateRoute><AudioPage /></PrivateRoute>} />
               <Route path="*" element={<Navigate to="/" replace />} />
             </Routes>
+            <WhatsAppFloat />
           </div>
         </BrowserRouter>
       </AuthProvider>

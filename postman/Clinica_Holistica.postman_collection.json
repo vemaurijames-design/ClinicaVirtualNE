@@ -1,0 +1,261 @@
+{
+  "info": {
+    "name": "Consultorio Holístico — API Completa",
+    "description": "Colección completa para probar el backend Spring Boot del Consultorio Holístico Cuídate Salud Plena",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "base_url", "value": "http://localhost:8080" },
+    { "key": "jwt_token", "value": "" },
+    { "key": "historia_id", "value": "" },
+    { "key": "reset_token", "value": "" }
+  ],
+  "item": [
+    {
+      "name": "🔐 AUTH",
+      "item": [
+        {
+          "name": "01 - Registrar Usuario",
+          "request": {
+            "method": "POST",
+            "url": "{{base_url}}/api/auth/registrar",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"Juan Carlos Pérez\",\n  \"email\": \"juan@test.com\",\n  \"password\": \"123456\"\n}"
+            }
+          },
+          "event": [{
+            "listen": "test",
+            "script": {
+              "exec": [
+                "if (pm.response.code === 200) {",
+                "    const body = pm.response.json();",
+                "    if (body.success && body.data && body.data.token) {",
+                "        pm.collectionVariables.set('jwt_token', body.data.token);",
+                "        console.log('✅ Token guardado:', body.data.nombre);",
+                "    }",
+                "}",
+                "pm.test('Registro exitoso', () => {",
+                "    pm.response.to.have.status(200);",
+                "    pm.expect(pm.response.json().success).to.be.true;",
+                "});"
+              ]
+            }
+          }]
+        },
+        {
+          "name": "02 - Login",
+          "request": {
+            "method": "POST",
+            "url": "{{base_url}}/api/auth/login",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"juan@test.com\",\n  \"password\": \"123456\"\n}"
+            }
+          },
+          "event": [{
+            "listen": "test",
+            "script": {
+              "exec": [
+                "if (pm.response.code === 200) {",
+                "    const body = pm.response.json();",
+                "    if (body.success && body.data.token) {",
+                "        pm.collectionVariables.set('jwt_token', body.data.token);",
+                "        console.log('✅ Login OK');",
+                "    }",
+                "}",
+                "pm.test('Login exitoso', () => {",
+                "    pm.response.to.have.status(200);",
+                "    pm.expect(pm.response.json().data.token).to.be.a('string');",
+                "});"
+              ]
+            }
+          }]
+        },
+        {
+          "name": "03 - Forgot Password",
+          "request": {
+            "method": "POST",
+            "url": "{{base_url}}/api/auth/forgot-password",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"juan@test.com\"\n}"
+            }
+          },
+          "event": [{
+            "listen": "test",
+            "script": {
+              "exec": [
+                "if (pm.response.code === 200) {",
+                "    const body = pm.response.json();",
+                "    if (body.data && body.data.token) {",
+                "        pm.collectionVariables.set('reset_token', body.data.token);",
+                "        console.log('Token reset:', body.data.token);",
+                "    }",
+                "}"
+              ]
+            }
+          }]
+        },
+        {
+          "name": "04 - Reset Password",
+          "request": {
+            "method": "POST",
+            "url": "{{base_url}}/api/auth/reset-password",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"token\": \"{{reset_token}}\",\n  \"nuevaPassword\": \"nueva123456\"\n}"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "📋 HISTORIA CLÍNICA",
+      "item": [
+        {
+          "name": "05 - Guardar Historia Clínica",
+          "request": {
+            "method": "POST",
+            "url": "{{base_url}}/api/historia",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{jwt_token}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"respuestas\": {\n    \"nombre\": \"Juan Carlos Pérez\",\n    \"edad\": \"35\",\n    \"genero\": \"Masculino\",\n    \"ciudad\": \"Medellín\",\n    \"motivo_consulta\": \"Consumo problemático de alcohol y ansiedad crónica\",\n    \"sustancias\": \"Alcohol, Marihuana\",\n    \"edad_inicio\": \"18\",\n    \"sustancia_principal\": \"Alcohol\",\n    \"frecuencia\": \"Diario - más de 5 cervezas\",\n    \"ultimo_consumo\": \"Hace 2 días\",\n    \"abstinencia_escala\": \"7\",\n    \"atencion_psicologica\": \"Sí, hace 2 años durante 6 meses\",\n    \"atencion_psiquiatrica\": \"No\",\n    \"diagnosticos\": \"Ansiedad generalizada sin tratamiento actual\",\n    \"medicamentos\": \"Ninguno\",\n    \"ideacion\": \"No\",\n    \"enfermedades\": \"Hipertensión leve\",\n    \"antecedentes_familiares\": \"Sí\",\n    \"cuantos_familiares\": \"2\",\n    \"cuales_familiares\": \"Padre y hermano con problemas de alcohol\",\n    \"situacion_laboral\": \"Empleado en empresa privada\",\n    \"red_apoyo\": \"Esposa y familia cercana\",\n    \"motivacion\": \"Quiero mejorar mi salud y recuperar confianza familiar\",\n    \"expectativas\": \"Lograr abstinencia total y manejar la ansiedad\"\n  },\n  \"consentimientoAceptado\": true\n}"
+            }
+          },
+          "event": [{
+            "listen": "test",
+            "script": {
+              "exec": [
+                "if (pm.response.code === 200) {",
+                "    const body = pm.response.json();",
+                "    if (body.success && body.data && body.data.id) {",
+                "        pm.collectionVariables.set('historia_id', body.data.id);",
+                "        console.log('✅ Historia ID:', body.data.id);",
+                "    }",
+                "}",
+                "pm.test('Historia guardada', () => {",
+                "    pm.response.to.have.status(200);",
+                "    pm.expect(pm.response.json().success).to.be.true;",
+                "});"
+              ]
+            }
+          }]
+        },
+        {
+          "name": "06 - Mis Historias",
+          "request": {
+            "method": "GET",
+            "url": "{{base_url}}/api/historia/mis-historias",
+            "header": [{ "key": "Authorization", "value": "Bearer {{jwt_token}}" }]
+          }
+        },
+        {
+          "name": "07 - Todas las Historias (Admin)",
+          "request": {
+            "method": "GET",
+            "url": "{{base_url}}/api/historia/todas"
+          }
+        }
+      ]
+    },
+    {
+      "name": "🧠 DIAGNÓSTICO IA",
+      "item": [
+        {
+          "name": "08 - Generar Diagnóstico Gemini",
+          "request": {
+            "method": "POST",
+            "url": "{{base_url}}/api/diagnostico/ia",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{jwt_token}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"respuestas\": {\n    \"nombre\": \"Juan Carlos Pérez\",\n    \"edad\": \"35\",\n    \"genero\": \"Masculino\",\n    \"ciudad\": \"Medellín\",\n    \"motivo_consulta\": \"Consumo problemático de alcohol y ansiedad\",\n    \"sustancias\": \"Alcohol, Marihuana\",\n    \"sustancia_principal\": \"Alcohol\",\n    \"frecuencia\": \"Diario - más de 5 cervezas\",\n    \"ultimo_consumo\": \"Hace 2 días\",\n    \"abstinencia_escala\": \"7\",\n    \"atencion_psicologica\": \"Sí hace 2 años\",\n    \"atencion_psiquiatrica\": \"No\",\n    \"diagnosticos\": \"Ansiedad generalizada\",\n    \"medicamentos\": \"Ninguno\",\n    \"ideacion\": \"No\",\n    \"enfermedades\": \"Hipertensión leve\",\n    \"antecedentes_familiares\": \"Padre y hermano\",\n    \"situacion_laboral\": \"Empleado\",\n    \"red_apoyo\": \"Familia cercana\",\n    \"motivacion\": \"Mejorar salud\",\n    \"expectativas\": \"Abstinencia total\"\n  },\n  \"historiaId\": {{historia_id}}\n}"
+            }
+          },
+          "event": [{
+            "listen": "test",
+            "script": {
+              "exec": [
+                "pm.test('Diagnóstico generado', () => {",
+                "    pm.response.to.have.status(200);",
+                "    const body = pm.response.json();",
+                "    pm.expect(body.success).to.be.true;",
+                "    console.log('✅ Diagnóstico OK');",
+                "});"
+              ]
+            }
+          }]
+        }
+      ]
+    },
+    {
+      "name": "📞 CONTACTO",
+      "item": [
+        {
+          "name": "09 - Enviar Contacto",
+          "request": {
+            "method": "POST",
+            "url": "{{base_url}}/api/contacto",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"María López\",\n  \"telefono\": \"3001234567\",\n  \"tipo\": \"Consulta\",\n  \"mensaje\": \"Quiero información sobre los programas de tratamiento para adicción al alcohol para mi familiar.\"\n}"
+            }
+          }
+        },
+        {
+          "name": "10 - Ver Contactos",
+          "request": {
+            "method": "GET",
+            "url": "{{base_url}}/api/contacto"
+          }
+        }
+      ]
+    },
+    {
+      "name": "🛡️ ADMIN",
+      "item": [
+        {
+          "name": "11 - Resumen General",
+          "request": {
+            "method": "GET",
+            "url": "{{base_url}}/api/admin/resumen"
+          }
+        },
+        {
+          "name": "12 - Ver Usuarios",
+          "request": {
+            "method": "GET",
+            "url": "{{base_url}}/api/admin/usuarios"
+          }
+        },
+        {
+          "name": "13 - Ver Historias Clínicas",
+          "request": {
+            "method": "GET",
+            "url": "{{base_url}}/api/admin/historias"
+          }
+        },
+        {
+          "name": "14 - Ver Contactos Admin",
+          "request": {
+            "method": "GET",
+            "url": "{{base_url}}/api/admin/contactos"
+          }
+        }
+      ]
+    }
+  ]
+}
