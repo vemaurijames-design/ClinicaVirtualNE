@@ -31,7 +31,7 @@ public class SecurityConfig {
                 .requestMatchers("/api/contacto").permitAll()
                 .requestMatchers("/api/diagnostico/**").permitAll()
                 .requestMatchers("/api/historia/**").permitAll()
-                .requestMatchers("/api/admin/**").permitAll() // en producción: .hasRole("ADMIN")
+                .requestMatchers("/api/admin/**").authenticated()
                 .anyRequest().authenticated()
             )
             .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class);

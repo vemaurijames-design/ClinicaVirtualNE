@@ -300,7 +300,7 @@ function LangProvider({ children }: { children: React.ReactNode }) {
 // AUTH CONTEXT
 // ═══════════════════════════════════════════════════════
 
-interface AuthUser { id: string; name: string; email: string }
+interface AuthUser { id: string; name: string; email: string; rol?: string }
 interface AuthCtx {
   user: AuthUser | null;
   login: (e: string, p: string) => Promise<boolean>;
@@ -330,7 +330,7 @@ function AuthProvider({ children }: { children: React.ReactNode }) {
       const json = await res.json();
       if (!res.ok || !json.success) return false;
       const data = json.data;
-      const u: AuthUser = { id: String(data.email), name: data.nombre, email: data.email };
+      const u: AuthUser = { id: String(data.email), name: data.nombre, email: data.email, rol: data.rol || "PACIENTE" };
       // Guardar token JWT para llamadas futuras al backend
       localStorage.setItem("ch_jwt", data.token);
       localStorage.setItem("ch_user", JSON.stringify(u));
@@ -365,7 +365,7 @@ function AuthProvider({ children }: { children: React.ReactNode }) {
       const json = await res.json();
       if (!res.ok || !json.success) return false;
       const data = json.data;
-      const u: AuthUser = { id: String(data.email), name: data.nombre, email: data.email };
+      const u: AuthUser = { id: String(data.email), name: data.nombre, email: data.email, rol: data.rol || "PACIENTE" };
       localStorage.setItem("ch_jwt", data.token);
       localStorage.setItem("ch_user", JSON.stringify(u));
       setUser(u);
@@ -927,6 +927,7 @@ function NavBar() {
     { to: "/diagnostico", label: t("aiDiagnosis"), icon: Brain },
     { to: "/tratamientos", label: t("programs"), icon: Pill },
     { to: "/audios", label: t("audios"), icon: Headphones },
+    ...(user.rol === "ADMIN" ? [{ to: "/admin", label: "Admin", icon: Shield }] : []),
   ];
 
   return (
@@ -2921,6 +2922,474 @@ function VideoModal({ video, onClose, t }: { video: VideoItem; onClose: () => vo
 }
 
 // ═══════════════════════════════════════════════════════
+// ADMIN ROUTE GUARD
+// ═══════════════════════════════════════════════════════
+
+function AdminRoute({ children }: { children: React.ReactNode }) {
+  const { user } = useAuth();
+  if (!user) return <Navigate to="/auth" replace />;
+  if (user.rol !== "ADMIN") return <Navigate to="/" replace />;
+  return <>{children}</>;
+}
+
+// ═══════════════════════════════════════════════════════
+// ADMIN PAGE — Panel de administración completo
+// ═══════════════════════════════════════════════════════
+
+type AdminTab = "resumen" | "usuarios" | "historias" | "contactos";
+
+interface AdminUsuario {
+  id: number; nombre: string; email: string; rol: string; activo: boolean; creadoEn?: string;
+}
+interface AdminHistoria {
+  id: number; usuarioId?: number; respuestas?: Record<string, string>; creadoEn?: string; consentimientoAceptado?: boolean;
+}
+interface AdminContacto {
+  id: number; nombre: string; telefono?: string; tipo?: string; mensaje?: string; estado: string; creadoEn?: string;
+}
+interface AdminResumen {
+  totalUsuarios: number; usuariosActivos: number; totalHistorias: number; totalContactos: number; contactosNuevos: number;
+}
+
+function AdminPage() {
+  const { user } = useAuth();
+  const navigate = useNavigate();
+  const [tab, setTab] = useState<AdminTab>("resumen");
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+  const [resumen, setResumen] = useState<AdminResumen | null>(null);
+  const [usuarios, setUsuarios] = useState<AdminUsuario[]>([]);
+  const [historias, setHistorias] = useState<AdminHistoria[]>([]);
+  const [contactos, setContactos] = useState<AdminContacto[]>([]);
+  // Modal crear/editar usuario
+  const [modalUsuario, setModalUsuario] = useState<{ open: boolean; editId?: number }>({ open: false });
+  const [formUsuario, setFormUsuario] = useState({ nombre: "", email: "", password: "", rol: "PACIENTE" });
+  const [savingUser, setSavingUser] = useState(false);
+  // Modal ver historia
+  const [historiaVer, setHistoriaVer] = useState<AdminHistoria | null>(null);
+
+  const jwt = localStorage.getItem("ch_jwt") || "";
+  const headers = { "Content-Type": "application/json", Authorization: `Bearer ${jwt}` };
+
+  const apiFetch = async (path: string, opts?: RequestInit) => {
+    const res = await fetch(`${API_URL}/api/admin${path}`, { headers, ...opts });
+    const json = await res.json();
+    if (!json.success) throw new Error(json.mensaje || "Error del servidor");
+    return json.data;
+  };
+
+  const loadTab = async (t: AdminTab) => {
+    setLoading(true); setError("");
+    try {
+      if (t === "resumen") { setResumen(await apiFetch("/resumen")); }
+      else if (t === "usuarios") { setUsuarios(await apiFetch("/usuarios")); }
+      else if (t === "historias") { setHistorias(await apiFetch("/historias")); }
+      else if (t === "contactos") { setContactos(await apiFetch("/contactos")); }
+    } catch (e: any) { setError(e.message || "Error al cargar datos"); }
+    finally { setLoading(false); }
+  };
+
+  useEffect(() => { loadTab(tab); }, [tab]);
+
+  const handleTabChange = (t: AdminTab) => { setTab(t); };
+
+  const toggleActivo = async (u: AdminUsuario) => {
+    try {
+      if (u.activo) {
+        await apiFetch(`/usuarios/${u.id}`, { method: "DELETE" });
+      } else {
+        await apiFetch(`/usuarios/${u.id}/activar`, { method: "PUT" });
+      }
+      loadTab("usuarios");
+    } catch (e: any) { alert(e.message); }
+  };
+
+  const abrirCrearUsuario = () => {
+    setFormUsuario({ nombre: "", email: "", password: "", rol: "PACIENTE" });
+    setModalUsuario({ open: true });
+  };
+
+  const abrirEditarUsuario = (u: AdminUsuario) => {
+    setFormUsuario({ nombre: u.nombre, email: u.email, password: "", rol: u.rol });
+    setModalUsuario({ open: true, editId: u.id });
+  };
+
+  const guardarUsuario = async () => {
+    setSavingUser(true);
+    try {
+      const body: any = { nombre: formUsuario.nombre, rol: formUsuario.rol };
+      if (modalUsuario.editId) {
+        if (formUsuario.password) body.password = formUsuario.password;
+        await apiFetch(`/usuarios/${modalUsuario.editId}`, { method: "PUT", body: JSON.stringify(body) });
+      } else {
+        body.email = formUsuario.email;
+        body.password = formUsuario.password || "Clinica2024!";
+        await apiFetch("/usuarios", { method: "POST", body: JSON.stringify(body) });
+      }
+      setModalUsuario({ open: false });
+      loadTab("usuarios");
+    } catch (e: any) { alert(e.message); }
+    finally { setSavingUser(false); }
+  };
+
+  const cambiarEstadoContacto = async (id: number, estado: string) => {
+    try {
+      await apiFetch(`/contactos/${id}/estado`, { method: "PUT", body: JSON.stringify({ estado }) });
+      loadTab("contactos");
+    } catch (e: any) { alert(e.message); }
+  };
+
+  const tabs: { id: AdminTab; label: string; icon: React.ElementType }[] = [
+    { id: "resumen", label: "Dashboard", icon: Activity },
+    { id: "usuarios", label: "Usuarios", icon: Users },
+    { id: "historias", label: "Historias Clínicas", icon: ClipboardList },
+    { id: "contactos", label: "Contactos", icon: MessageSquare },
+  ];
+
+  return (
+    <div className="min-h-screen bg-background" style={{ fontFamily: "'Plus Jakarta Sans', 'DM Sans', sans-serif" }}>
+      {/* Header Admin */}
+      <div className="bg-card border-b border-border px-6 py-4 flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <div className="w-9 h-9 rounded-xl bg-primary/15 flex items-center justify-center">
+            <Shield className="w-5 h-5 text-primary" />
+          </div>
+          <div>
+            <h1 className="text-base font-bold">Panel Administrativo</h1>
+            <p className="text-xs text-muted-foreground">Consultorio Holístico · Cuídate Salud Plena</p>
+          </div>
+        </div>
+        <div className="flex items-center gap-2">
+          <span className="text-xs text-muted-foreground hidden sm:block">{user?.name}</span>
+          <span className="text-[10px] bg-primary/15 text-primary px-2 py-0.5 rounded-full font-medium">ADMIN</span>
+          <button onClick={() => navigate("/")} className="ml-2 p-2 rounded-lg text-muted-foreground hover:bg-muted transition-colors">
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+      </div>
+
+      <div className="max-w-7xl mx-auto px-4 py-6">
+        {/* Tabs */}
+        <div className="flex gap-1 mb-6 bg-muted/40 p-1 rounded-xl w-fit">
+          {tabs.map(t => (
+            <button key={t.id} onClick={() => handleTabChange(t.id)}
+              className={clsx("flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium transition-colors",
+                tab === t.id ? "bg-card text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground")}>
+              <t.icon className="w-4 h-4" />{t.label}
+            </button>
+          ))}
+        </div>
+
+        {error && (
+          <div className="mb-4 bg-red-500/10 border border-red-500/25 rounded-xl px-4 py-3 text-sm text-red-400 flex items-center gap-2">
+            <AlertTriangle className="w-4 h-4 shrink-0" />{error}
+          </div>
+        )}
+
+        {loading ? (
+          <div className="flex items-center justify-center py-24 text-muted-foreground">
+            <Loader2 className="w-7 h-7 animate-spin mr-3" /> Cargando...
+          </div>
+        ) : (
+          <>
+            {/* ── RESUMEN ── */}
+            {tab === "resumen" && resumen && (
+              <div className="space-y-6">
+                <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+                  {[
+                    { label: "Total Usuarios", value: resumen.totalUsuarios, icon: Users, color: "text-blue-400 bg-blue-400/10" },
+                    { label: "Usuarios Activos", value: resumen.usuariosActivos, icon: CheckCircle, color: "text-emerald-400 bg-emerald-400/10" },
+                    { label: "Historias Clínicas", value: resumen.totalHistorias, icon: ClipboardList, color: "text-violet-400 bg-violet-400/10" },
+                    { label: "Total Contactos", value: resumen.totalContactos, icon: Phone, color: "text-amber-400 bg-amber-400/10" },
+                    { label: "Contactos Nuevos", value: resumen.contactosNuevos, icon: MessageSquare, color: "text-red-400 bg-red-400/10" },
+                  ].map(s => (
+                    <div key={s.label} className="bg-card border border-border rounded-2xl p-4">
+                      <div className={clsx("w-9 h-9 rounded-xl flex items-center justify-center mb-3", s.color)}>
+                        <s.icon className="w-5 h-5" />
+                      </div>
+                      <div className="text-2xl font-bold">{s.value}</div>
+                      <div className="text-xs text-muted-foreground mt-0.5">{s.label}</div>
+                    </div>
+                  ))}
+                </div>
+                <div className="bg-card border border-border rounded-2xl p-5">
+                  <h3 className="text-sm font-semibold mb-3">Acciones Rápidas</h3>
+                  <div className="flex flex-wrap gap-3">
+                    <button onClick={() => handleTabChange("usuarios")} className="flex items-center gap-2 bg-primary/10 hover:bg-primary/20 text-primary px-4 py-2 rounded-xl text-sm transition-colors">
+                      <Users className="w-4 h-4" /> Gestionar Usuarios
+                    </button>
+                    <button onClick={() => handleTabChange("historias")} className="flex items-center gap-2 bg-violet-500/10 hover:bg-violet-500/20 text-violet-400 px-4 py-2 rounded-xl text-sm transition-colors">
+                      <ClipboardList className="w-4 h-4" /> Ver Historias
+                    </button>
+                    <button onClick={() => handleTabChange("contactos")} className="flex items-center gap-2 bg-amber-500/10 hover:bg-amber-500/20 text-amber-400 px-4 py-2 rounded-xl text-sm transition-colors">
+                      <MessageSquare className="w-4 h-4" /> Revisar Contactos
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* ── USUARIOS ── */}
+            {tab === "usuarios" && (
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <h2 className="text-base font-semibold">Gestión de Usuarios ({usuarios.length})</h2>
+                  <button onClick={abrirCrearUsuario}
+                    className="flex items-center gap-1.5 bg-primary text-primary-foreground px-4 py-2 rounded-xl text-sm font-medium hover:bg-primary/90 transition-colors">
+                    <User className="w-4 h-4" /> Nuevo Usuario
+                  </button>
+                </div>
+                <div className="bg-card border border-border rounded-2xl overflow-hidden">
+                  <table className="w-full text-sm">
+                    <thead className="bg-muted/40 border-b border-border">
+                      <tr>
+                        <th className="text-left px-4 py-3 text-xs font-medium text-muted-foreground">Nombre</th>
+                        <th className="text-left px-4 py-3 text-xs font-medium text-muted-foreground hidden md:table-cell">Email</th>
+                        <th className="text-left px-4 py-3 text-xs font-medium text-muted-foreground">Rol</th>
+                        <th className="text-left px-4 py-3 text-xs font-medium text-muted-foreground">Estado</th>
+                        <th className="text-left px-4 py-3 text-xs font-medium text-muted-foreground">Acciones</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-border">
+                      {usuarios.map(u => (
+                        <tr key={u.id} className="hover:bg-muted/20 transition-colors">
+                          <td className="px-4 py-3">
+                            <div className="flex items-center gap-2">
+                              <div className="w-7 h-7 rounded-full bg-primary/15 flex items-center justify-center text-xs font-bold text-primary">
+                                {u.nombre.charAt(0).toUpperCase()}
+                              </div>
+                              <span className="font-medium">{u.nombre}</span>
+                            </div>
+                          </td>
+                          <td className="px-4 py-3 text-muted-foreground hidden md:table-cell">{u.email}</td>
+                          <td className="px-4 py-3">
+                            <span className={clsx("text-[10px] px-2 py-0.5 rounded-full font-medium",
+                              u.rol === "ADMIN" ? "bg-primary/15 text-primary" : "bg-muted text-muted-foreground")}>
+                              {u.rol}
+                            </span>
+                          </td>
+                          <td className="px-4 py-3">
+                            <span className={clsx("text-[10px] px-2 py-0.5 rounded-full font-medium",
+                              u.activo ? "bg-emerald-500/15 text-emerald-400" : "bg-red-500/15 text-red-400")}>
+                              {u.activo ? "Activo" : "Inactivo"}
+                            </span>
+                          </td>
+                          <td className="px-4 py-3">
+                            <div className="flex items-center gap-2">
+                              <button onClick={() => abrirEditarUsuario(u)}
+                                className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition-colors" title="Editar">
+                                <Eye className="w-3.5 h-3.5" />
+                              </button>
+                              {u.rol !== "ADMIN" && (
+                                <button onClick={() => toggleActivo(u)}
+                                  className={clsx("p-1.5 rounded-lg transition-colors text-xs",
+                                    u.activo ? "text-red-400 hover:bg-red-500/10" : "text-emerald-400 hover:bg-emerald-500/10")}
+                                  title={u.activo ? "Desactivar" : "Activar"}>
+                                  {u.activo ? <X className="w-3.5 h-3.5" /> : <CheckCircle className="w-3.5 h-3.5" />}
+                                </button>
+                              )}
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                  {usuarios.length === 0 && (
+                    <div className="text-center py-12 text-muted-foreground text-sm">No hay usuarios registrados</div>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* ── HISTORIAS ── */}
+            {tab === "historias" && (
+              <div className="space-y-4">
+                <h2 className="text-base font-semibold">Historias Clínicas ({historias.length})</h2>
+                <div className="bg-card border border-border rounded-2xl overflow-hidden">
+                  <table className="w-full text-sm">
+                    <thead className="bg-muted/40 border-b border-border">
+                      <tr>
+                        <th className="text-left px-4 py-3 text-xs font-medium text-muted-foreground">ID</th>
+                        <th className="text-left px-4 py-3 text-xs font-medium text-muted-foreground hidden md:table-cell">Paciente</th>
+                        <th className="text-left px-4 py-3 text-xs font-medium text-muted-foreground">Fecha</th>
+                        <th className="text-left px-4 py-3 text-xs font-medium text-muted-foreground">Consentimiento</th>
+                        <th className="text-left px-4 py-3 text-xs font-medium text-muted-foreground">Acciones</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-border">
+                      {historias.map(h => (
+                        <tr key={h.id} className="hover:bg-muted/20 transition-colors">
+                          <td className="px-4 py-3 font-mono text-xs text-muted-foreground">#{h.id}</td>
+                          <td className="px-4 py-3 hidden md:table-cell text-muted-foreground">
+                            {h.respuestas?.nombre || h.respuestas?.["nombre"] || `Usuario ${h.usuarioId || ""}`}
+                          </td>
+                          <td className="px-4 py-3 text-xs text-muted-foreground">
+                            {h.creadoEn ? new Date(h.creadoEn).toLocaleDateString("es-CO") : "—"}
+                          </td>
+                          <td className="px-4 py-3">
+                            <span className={clsx("text-[10px] px-2 py-0.5 rounded-full font-medium",
+                              h.consentimientoAceptado ? "bg-emerald-500/15 text-emerald-400" : "bg-amber-500/15 text-amber-400")}>
+                              {h.consentimientoAceptado ? "Aceptado" : "Pendiente"}
+                            </span>
+                          </td>
+                          <td className="px-4 py-3">
+                            <button onClick={() => setHistoriaVer(h)}
+                              className="flex items-center gap-1 text-xs text-primary hover:text-primary/80 transition-colors">
+                              <Eye className="w-3.5 h-3.5" /> Ver
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                  {historias.length === 0 && (
+                    <div className="text-center py-12 text-muted-foreground text-sm">No hay historias clínicas registradas</div>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* ── CONTACTOS ── */}
+            {tab === "contactos" && (
+              <div className="space-y-4">
+                <h2 className="text-base font-semibold">Mensajes de Contacto ({contactos.length})</h2>
+                <div className="space-y-3">
+                  {contactos.map(c => (
+                    <div key={c.id} className="bg-card border border-border rounded-2xl p-4">
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 mb-1 flex-wrap">
+                            <span className="font-medium text-sm">{c.nombre}</span>
+                            {c.telefono && <span className="text-xs text-muted-foreground">{c.telefono}</span>}
+                            {c.tipo && <span className="text-[10px] bg-muted px-2 py-0.5 rounded-full">{c.tipo}</span>}
+                            <span className={clsx("text-[10px] px-2 py-0.5 rounded-full font-medium",
+                              c.estado === "NUEVO" ? "bg-red-500/15 text-red-400" :
+                              c.estado === "LEIDO" ? "bg-amber-500/15 text-amber-400" : "bg-emerald-500/15 text-emerald-400")}>
+                              {c.estado}
+                            </span>
+                          </div>
+                          <p className="text-sm text-muted-foreground line-clamp-2">{c.mensaje}</p>
+                          {c.creadoEn && (
+                            <p className="text-[10px] text-muted-foreground/60 mt-1">
+                              {new Date(c.creadoEn).toLocaleString("es-CO")}
+                            </p>
+                          )}
+                        </div>
+                        <div className="flex gap-1 shrink-0">
+                          {c.estado !== "LEIDO" && (
+                            <button onClick={() => cambiarEstadoContacto(c.id, "LEIDO")}
+                              className="text-xs px-2.5 py-1 rounded-lg bg-amber-500/10 text-amber-400 hover:bg-amber-500/20 transition-colors">
+                              Leído
+                            </button>
+                          )}
+                          {c.estado !== "RESPONDIDO" && (
+                            <button onClick={() => cambiarEstadoContacto(c.id, "RESPONDIDO")}
+                              className="text-xs px-2.5 py-1 rounded-lg bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20 transition-colors">
+                              Respondido
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                  {contactos.length === 0 && (
+                    <div className="text-center py-12 text-muted-foreground text-sm bg-card border border-border rounded-2xl">
+                      No hay mensajes de contacto
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+          </>
+        )}
+      </div>
+
+      {/* Modal Crear/Editar Usuario */}
+      {modalUsuario.open && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+          <div className="bg-card border border-border rounded-2xl p-6 w-full max-w-md shadow-2xl">
+            <div className="flex items-center justify-between mb-5">
+              <h3 className="font-semibold">{modalUsuario.editId ? "Editar Usuario" : "Crear Usuario"}</h3>
+              <button onClick={() => setModalUsuario({ open: false })} className="p-1.5 rounded-lg hover:bg-muted">
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+            <div className="space-y-3">
+              <div>
+                <label className="text-xs font-medium text-muted-foreground block mb-1">Nombre completo</label>
+                <input value={formUsuario.nombre} onChange={e => setFormUsuario(p => ({ ...p, nombre: e.target.value }))}
+                  className="w-full bg-muted/40 border border-border rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-primary/50"
+                  placeholder="Juan Carlos Pérez" />
+              </div>
+              {!modalUsuario.editId && (
+                <div>
+                  <label className="text-xs font-medium text-muted-foreground block mb-1">Email</label>
+                  <input type="email" value={formUsuario.email} onChange={e => setFormUsuario(p => ({ ...p, email: e.target.value }))}
+                    className="w-full bg-muted/40 border border-border rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-primary/50"
+                    placeholder="correo@ejemplo.com" />
+                </div>
+              )}
+              <div>
+                <label className="text-xs font-medium text-muted-foreground block mb-1">
+                  {modalUsuario.editId ? "Nueva contraseña (dejar vacío para no cambiar)" : "Contraseña"}
+                </label>
+                <input type="password" value={formUsuario.password} onChange={e => setFormUsuario(p => ({ ...p, password: e.target.value }))}
+                  className="w-full bg-muted/40 border border-border rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-primary/50"
+                  placeholder={modalUsuario.editId ? "••••••••" : "Mínimo 6 caracteres"} />
+              </div>
+              <div>
+                <label className="text-xs font-medium text-muted-foreground block mb-1">Rol</label>
+                <select value={formUsuario.rol} onChange={e => setFormUsuario(p => ({ ...p, rol: e.target.value }))}
+                  className="w-full bg-muted/40 border border-border rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-primary/50">
+                  <option value="PACIENTE">PACIENTE</option>
+                  <option value="ADMIN">ADMIN</option>
+                </select>
+              </div>
+            </div>
+            <div className="flex gap-3 mt-5">
+              <button onClick={() => setModalUsuario({ open: false })}
+                className="flex-1 border border-border rounded-xl py-2 text-sm text-muted-foreground hover:bg-muted transition-colors">
+                Cancelar
+              </button>
+              <button onClick={guardarUsuario} disabled={savingUser}
+                className="flex-1 bg-primary text-primary-foreground rounded-xl py-2 text-sm font-medium hover:bg-primary/90 disabled:opacity-50 transition-colors flex items-center justify-center gap-2">
+                {savingUser ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}
+                {modalUsuario.editId ? "Guardar cambios" : "Crear usuario"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal Ver Historia */}
+      {historiaVer && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+          <div className="bg-card border border-border rounded-2xl p-6 w-full max-w-2xl shadow-2xl max-h-[80vh] flex flex-col">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="font-semibold">Historia Clínica #{historiaVer.id}</h3>
+              <button onClick={() => setHistoriaVer(null)} className="p-1.5 rounded-lg hover:bg-muted">
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+            <div className="overflow-y-auto flex-1 space-y-2 pr-1">
+              {historiaVer.respuestas && Object.entries(historiaVer.respuestas).map(([k, v]) => (
+                <div key={k} className="flex gap-3 bg-muted/20 rounded-xl px-3 py-2">
+                  <span className="text-xs text-muted-foreground capitalize min-w-[140px] shrink-0">{k.replace(/_/g, " ")}</span>
+                  <span className="text-sm font-medium break-words">{String(v)}</span>
+                </div>
+              ))}
+              {!historiaVer.respuestas && (
+                <p className="text-sm text-muted-foreground text-center py-8">Sin datos de respuestas</p>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ═══════════════════════════════════════════════════════
 // WHATSAPP FLOATING BUTTON — visible en toda la app
 // ═══════════════════════════════════════════════════════
 
@@ -2972,6 +3441,7 @@ export default function App() {
               <Route path="/diagnostico" element={<PrivateRoute><DiagnosisPage /></PrivateRoute>} />
               <Route path="/tratamientos" element={<PrivateRoute><TreatmentsPage /></PrivateRoute>} />
               <Route path="/audios" element={<PrivateRoute><AudioPage /></PrivateRoute>} />
+              <Route path="/admin" element={<AdminRoute><AdminPage /></AdminRoute>} />
               <Route path="*" element={<Navigate to="/" replace />} />
             </Routes>
             <WhatsAppFloat />

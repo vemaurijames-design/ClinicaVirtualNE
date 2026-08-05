@@ -8,4 +8,5 @@ import java.util.List;
 @Repository
 public interface ContactoRepository extends JpaRepository<Contacto, Long> {
     List<Contacto> findByEstadoOrderByCreadoEnDesc(String estado);
+    long countByEstado(String estado);
 }
