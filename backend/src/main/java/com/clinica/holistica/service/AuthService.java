@@ -20,12 +20,12 @@ public class AuthService {
     private final UsuarioRepository usuarioRepo;
     private final PasswordEncoder passwordEncoder;
     private final JwtUtil jwtUtil;
+    private final EmailService emailService;
 
     public AuthResponse registrar(RegisterRequest req) {
         if (usuarioRepo.existsByEmail(req.getEmail())) {
             throw new RuntimeException("El email ya está registrado");
         }
-
         Usuario u = new Usuario();
         u.setNombre(req.getNombre());
         u.setEmail(req.getEmail().toLowerCase().trim());
@@ -34,7 +34,6 @@ public class AuthService {
         u.setActivo(true);
         u.setCreadoEn(LocalDateTime.now());
         usuarioRepo.save(u);
-
         String token = jwtUtil.generateToken(u.getEmail(), u.getRol());
         return new AuthResponse(token, u.getNombre(), u.getEmail(), u.getRol());
     }
@@ -42,18 +41,14 @@ public class AuthService {
     public AuthResponse login(AuthRequest req) {
         Usuario u = usuarioRepo.findByEmail(req.getEmail().toLowerCase().trim())
                 .orElseThrow(() -> new RuntimeException("Email o contraseña incorrectos"));
-
         if (!u.getActivo()) {
             throw new RuntimeException("Cuenta inactiva. Contacte al administrador.");
         }
-
         if (!passwordEncoder.matches(req.getPassword(), u.getPasswordHash())) {
             throw new RuntimeException("Email o contraseña incorrectos");
         }
-
         u.setUltimoAcceso(LocalDateTime.now());
         usuarioRepo.save(u);
-
         String token = jwtUtil.generateToken(u.getEmail(), u.getRol());
         return new AuthResponse(token, u.getNombre(), u.getEmail(), u.getRol());
     }
@@ -67,18 +62,18 @@ public class AuthService {
         u.setResetTokenExpira(LocalDateTime.now().plusHours(1));
         usuarioRepo.save(u);
 
-        // En producción enviar por email; aquí retornamos el token para la demo
-        return token;
+        // Envío real por Gmail
+        emailService.enviarTokenRecuperacion(u.getEmail(), token);
+
+        return token; // también se puede devolver en API para pruebas
     }
 
     public void cambiarPassword(String token, String nuevaPassword) {
         Usuario u = usuarioRepo.findByResetToken(token)
                 .orElseThrow(() -> new RuntimeException("Token inválido o expirado"));
-
         if (u.getResetTokenExpira().isBefore(LocalDateTime.now())) {
             throw new RuntimeException("El token ha expirado");
         }
-
         u.setPasswordHash(passwordEncoder.encode(nuevaPassword));
         u.setResetToken(null);
         u.setResetTokenExpira(null);

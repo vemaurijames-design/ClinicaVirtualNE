@@ -4,6 +4,7 @@ import com.clinica.holistica.security.JwtFilter;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
@@ -23,18 +24,27 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
-            .csrf(AbstractHttpConfigurer::disable)
-            .cors(cors -> {}) // usa el CorsFilter de CorsConfig
-            .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-            .authorizeHttpRequests(auth -> auth
-                .requestMatchers("/api/auth/**").permitAll()
-                .requestMatchers("/api/contacto").permitAll()
-                .requestMatchers("/api/diagnostico/**").permitAll()
-                .requestMatchers("/api/historia/**").permitAll()
-                .requestMatchers("/api/admin/**").authenticated()
-                .anyRequest().authenticated()
-            )
-            .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class);
+                .csrf(AbstractHttpConfigurer::disable)
+                .cors(cors -> {})
+                .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                .authorizeHttpRequests(auth -> auth
+                        .requestMatchers("/api/auth/**").permitAll()
+                        .requestMatchers("/api/contacto").permitAll()
+                        .requestMatchers("/api/diagnostico/**").permitAll()
+                        .requestMatchers("/api/historia/**").permitAll()
+                        .requestMatchers("/api/admin/**").authenticated()
+                        .requestMatchers("/api/pagos/webhook").permitAll()
+                        .requestMatchers("/api/pagos/**").authenticated()
+                        .requestMatchers("/api/historia/mías").authenticated()
+                        .requestMatchers(HttpMethod.GET, "/api/historia/todas").hasAnyAuthority("ADMIN", "MEDICO", "ROLE_ADMIN", "ROLE_MEDICO")
+                        .requestMatchers("/api/historia/**").authenticated()
+                        .requestMatchers("/api/chat/**").authenticated()
+                        .requestMatchers("/api/medico/**").hasAnyAuthority("MEDICO", "ADMIN", "ROLE_MEDICO", "ROLE_ADMIN")
+                        .requestMatchers("/api/admin/**").hasRole("ADMIN")
+                        .requestMatchers("/api/medico/**").authenticated()
+                        .anyRequest().authenticated()
+                )
+                .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
     }

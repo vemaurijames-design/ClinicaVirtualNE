@@ -32,10 +32,9 @@ public class AuthController {
     public ResponseEntity<ApiResponse<Map<String, String>>> forgotPassword(
             @RequestBody Map<String, String> body) {
         String token = authService.solicitarReset(body.get("email"));
-        // En producción: enviar por email. Aquí retornamos el token para demo.
         return ResponseEntity.ok(ApiResponse.ok("Token generado",
                 Map.of("token", token,
-                       "nota", "En producción este token llega por email")));
+                        "nota", "En producción este token llega por email")));
     }
 
     @PostMapping("/reset-password")

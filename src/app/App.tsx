@@ -113,7 +113,6 @@ const T = {
     confirmNum: "Número de confirmación",
     forgotPass: "¿Olvidaste tu contraseña?", resetPassword: "Restablecer contraseña",
     sendCode: "Enviar código", enterCode: "Ingresar código", newPassword: "Nueva contraseña",
-    codeDemo: "Código de recuperación (simulado — en producción llega por email):",
     backToLogin: "Volver al inicio de sesión", passwordChanged: "¡Contraseña restablecida!",
     passwordChangedSub: "Ya puede iniciar sesión con su nueva contraseña.",
     clinicalHistory: "Historia Clínica", aiDiagnosis: "Diagnóstico IA",
@@ -567,199 +566,596 @@ const BONUS_MONTHS = {
 };
 
 // ═══════════════════════════════════════════════════════
+// ACCESO POR PLAN
+// free → cualquiera logueado
+// plans → desbloquea desde ese mes en adelante
+// ═══════════════════════════════════════════════════════
+
+type PlanId = "mes1" | "mes2" | "mes3" | "mes4";
+
+function puedeReproducir(
+  item: { free: boolean; plans: PlanId[] },
+  planActivo: PlanId | null
+): boolean {
+  if (item.free) return true;
+  if (!planActivo) return false;
+  return item.plans.includes(planActivo);
+}
+
+/** Lee plan guardado tras pago (ajusta la clave si ya usas otra) */
+function getPlanActivo(): PlanId | null {
+  const p = localStorage.getItem("ch_plan_activo");
+  if (p === "mes1" || p === "mes2" || p === "mes3" || p === "mes4") return p;
+  return null;
+}
+
+// ═══════════════════════════════════════════════════════
 // AUDIO LIBRARY
-// Instrucción: agrega audioSrc: "/audios/tu-archivo.mp3" para audio real
+// Archivos reales en: public/audios/nombre.mp3
 // ═══════════════════════════════════════════════════════
 
 interface AudioItem {
-  id: number; cat: string; title: string; duration: string;
-  free: boolean; doctor: boolean; desc: string;
-  audioSrc?: string; // <- AGREGA TU ARCHIVO: "/audios/nombre.mp3"
+  id: number;
+  cat: "autohipnosis" | "binaural" | "podcasts";
+  title: string;
+  duration: string;
+  free: boolean;
+  doctor: boolean;
+  desc: string;
+  plans: PlanId[];
+  audioSrc?: string;
 }
 
 const AUDIOS: AudioItem[] = [
-  { id: 1, cat: "autohipnosis", title: "Inducción profunda para la calma", duration: "22:14", free: true, doctor: true, desc: "Sesión guiada por el Dr. para reducción del craving",
-    audioSrc: undefined }, // Ejemplo: audioSrc: "/audios/induccion-calma.mp3"
-  { id: 2, cat: "autohipnosis", title: "Reprogramación de hábitos", duration: "18:30", free: false, doctor: true, desc: "Técnica de visualización y sugestión positiva" },
-  { id: 3, cat: "autohipnosis", title: "Liberación del estrés y ansiedad", duration: "25:00", free: false, doctor: true, desc: "Hipnosis clínica para manejo de la abstinencia" },
-  { id: 4, cat: "autohipnosis", title: "Autoimagen positiva y autoestima", duration: "19:45", free: false, doctor: true, desc: "Reconstrucción del autoconcepto en recuperación" },
-  { id: 5, cat: "binaural", title: "Ondas Alpha — Reducción del craving", duration: "40:00", free: true, doctor: false, desc: "Frecuencias 8-12 Hz para calma profunda",
-    audioSrc: undefined }, // Ejemplo: audioSrc: "/audios/ondas-alpha.mp3"
-  { id: 6, cat: "binaural", title: "Ondas Theta — Meditación profunda", duration: "45:00", free: false, doctor: false, desc: "4-8 Hz para estados meditativos y sanación" },
-  { id: 7, cat: "binaural", title: "Suero terapia — Audio de acompañamiento", duration: "60:00", free: false, doctor: true, desc: "Música binaural + voz del médico para sesiones de suero" },
-  { id: 8, cat: "binaural", title: "Ondas Delta — Sueño reparador", duration: "50:00", free: false, doctor: false, desc: "0.5-4 Hz para sueño profundo y regeneración" },
-  { id: 9, cat: "podcasts", title: "Ep.1: El camino hacia la recuperación", duration: "35:45", free: true, doctor: true, desc: "El Dr. explica el proceso holístico de sanación" },
-  { id: 10, cat: "podcasts", title: "Ep.2: Neurociencia y adicción", duration: "28:20", free: false, doctor: true, desc: "Cómo el cerebro se recupera del consumo" },
-  { id: 11, cat: "podcasts", title: "Ep.3: Yoga, mente y adicción", duration: "32:10", free: false, doctor: false, desc: "Entrevista con terapeuta de yoga especializada" },
-  { id: 12, cat: "podcasts", title: "Ep.4: Familias en la recuperación", duration: "41:00", free: false, doctor: false, desc: "Cómo involucrar a la familia en el proceso" },
+  // —— GRATIS ——
+  {
+    id: 1,
+    cat: "autohipnosis",
+    title: "Inducción profunda para la calma",
+    duration: "22:14",
+    free: true,
+    doctor: true,
+    desc: "Sesión guiada para reducción del craving. Regalo de bienvenida.",
+    plans: [],
+    audioSrc: "/audios/Meditacion-Sueroterapia.mp3",
+  },
+  {
+    id: 5,
+    cat: "binaural",
+    title: "Ondas Alpha — Reducción del craving",
+    duration: "40:00",
+    free: true,
+    doctor: false,
+    desc: "Frecuencias 8–12 Hz para calma profunda.",
+    plans: [],
+    // audioSrc: "/audios/ondas-alpha.mp3",
+  },
+  {
+    id: 9,
+    cat: "podcasts",
+    title: "Ep.1: El camino hacia la recuperación",
+    duration: "35:45",
+    free: true,
+    doctor: true,
+    desc: "Proceso holístico de sanación.",
+    plans: [],
+    // audioSrc: "/audios/podcast-ep1.mp3",
+  },
+
+  // —— MES 1 ——
+  {
+    id: 2,
+    cat: "autohipnosis",
+    title: "Reprogramación de hábitos",
+    duration: "18:30",
+    free: false,
+    doctor: true,
+    desc: "Visualización y sugestión positiva.",
+    plans: ["mes1", "mes2", "mes3", "mes4"],
+  },
+  {
+    id: 3,
+    cat: "autohipnosis",
+    title: "Liberación del estrés y ansiedad",
+    duration: "25:00",
+    free: false,
+    doctor: true,
+    desc: "Hipnosis clínica para manejo de la abstinencia.",
+    plans: ["mes1", "mes2", "mes3", "mes4"],
+  },
+  {
+    id: 7,
+    cat: "binaural",
+    title: "Suero terapia — Audio de acompañamiento",
+    duration: "60:00",
+    free: false,
+    doctor: true,
+    desc: "Música binaural + voz del médico.",
+    plans: ["mes1", "mes2", "mes3", "mes4"],
+  },
+
+  // —— MES 2 ——
+  {
+    id: 4,
+    cat: "autohipnosis",
+    title: "Autoimagen positiva y autoestima",
+    duration: "19:45",
+    free: false,
+    doctor: true,
+    desc: "Reconstrucción del autoconcepto.",
+    plans: ["mes2", "mes3", "mes4"],
+  },
+  {
+    id: 6,
+    cat: "binaural",
+    title: "Ondas Theta — Meditación profunda",
+    duration: "45:00",
+    free: false,
+    doctor: false,
+    desc: "4–8 Hz para meditación y sanación.",
+    plans: ["mes2", "mes3", "mes4"],
+  },
+  {
+    id: 10,
+    cat: "podcasts",
+    title: "Ep.2: Neurociencia y adicción",
+    duration: "28:20",
+    free: false,
+    doctor: true,
+    desc: "Cómo el cerebro se recupera del consumo.",
+    plans: ["mes2", "mes3", "mes4"],
+  },
+
+  // —— MES 3 ——
+  {
+    id: 8,
+    cat: "binaural",
+    title: "Ondas Delta — Sueño reparador",
+    duration: "50:00",
+    free: false,
+    doctor: false,
+    desc: "Sueño profundo y regeneración.",
+    plans: ["mes3", "mes4"],
+  },
+  {
+    id: 11,
+    cat: "podcasts",
+    title: "Ep.3: Yoga, mente y adicción",
+    duration: "32:10",
+    free: false,
+    doctor: false,
+    desc: "Yoga terapéutico y recuperación.",
+    plans: ["mes3", "mes4"],
+  },
+
+  // —— MES 4 ——
+  {
+    id: 12,
+    cat: "podcasts",
+    title: "Ep.4: Familias en la recuperación",
+    duration: "41:00",
+    free: false,
+    doctor: false,
+    desc: "Involucrar a la familia en el proceso.",
+    plans: ["mes4"],
+  },
 ];
 
 // ═══════════════════════════════════════════════════════
 // VIDEO LIBRARY
-// Instrucción: agrega videoSrc: "/videos/tu-archivo.mp4" para video real
-// También puedes usar un embed de YouTube: youtubeId: "dQw4w9WgXcQ"
+// public/videos/archivo.mp4  |  youtubeId = solo ID
 // ═══════════════════════════════════════════════════════
 
 interface VideoItem {
-  id: number; cat: string; title: string; duration: string;
-  free: boolean; doctor: boolean; desc: string; thumbnail?: string;
-  videoSrc?: string;    // <- AGREGA: "/videos/nombre.mp4"
-  youtubeId?: string;   // <- O un ID de YouTube privado/no listado
+  id: number;
+  cat: "autohipnosis" | "yoga";
+  title: string;
+  duration: string;
+  free: boolean;
+  doctor: boolean;
+  desc: string;
+  plans: PlanId[];
+  thumbnail?: string;
+  videoSrc?: string;
+  youtubeId?: string;
 }
 
 const VIDEOS: VideoItem[] = [
-  { id: 1, cat: "autohipnosis", title: "Autohipnosis: Sesión de bienvenida (regalo)", duration: "18:00", free: true, doctor: true,
-    desc: "Video regalo de bienvenida. Inducción guiada por el Dr. para tu primer día.",
-    videoSrc: undefined, // Ejemplo: videoSrc: "/videos/bienvenida-hipnosis.mp4"
-    youtubeId: undefined }, // Ejemplo: youtubeId: "TU_ID_DE_YOUTUBE"
-  { id: 2, cat: "autohipnosis", title: "Autohipnosis: Semana 2 — Refuerzo motivacional", duration: "22:30", free: false, doctor: true,
-    desc: "Segunda sesión. Visualización del futuro sin adicción." },
-  { id: 3, cat: "autohipnosis", title: "Autohipnosis: Semana 3 — Manejo del craving", duration: "20:15", free: false, doctor: true,
-    desc: "Técnicas de anclaje hipnótico para resistir el impulso." },
-  { id: 4, cat: "autohipnosis", title: "Autohipnosis: Semana 4 — Consolidación", duration: "25:00", free: false, doctor: true,
-    desc: "Sesión de consolidación. Autosugestión positiva final del mes." },
-  { id: 5, cat: "yoga", title: "Yoga Terapéutico: Sesión 1 — Respiración", duration: "30:00", free: false, doctor: false,
-    desc: "Pranayama y técnicas de respiración para reducir ansiedad por abstinencia." },
-  { id: 6, cat: "yoga", title: "Yoga Terapéutico: Sesión 2 — Equilibrio", duration: "35:00", free: false, doctor: false,
-    desc: "Secuencia de asanas para restablecer el equilibrio del sistema nervioso." },
+  {
+    id: 1,
+    cat: "autohipnosis",
+    title: "Autohipnosis: Sesión de bienvenida (regalo)",
+    duration: "18:00",
+    free: true,
+    doctor: true,
+    desc: "Video regalo de bienvenida. Inducción del primer día.",
+    plans: [],
+    videoSrc: "/videos/autohipnosis.mp4",
+    youtubeId: "YV28Owup2ng",
+  },
+  {
+    id: 2,
+    cat: "autohipnosis",
+    title: "Autohipnosis: Semana 2 — Refuerzo motivacional",
+    duration: "22:30",
+    free: false,
+    doctor: true,
+    desc: "Visualización del futuro sin adicción.",
+    plans: ["mes1", "mes2", "mes3", "mes4"],
+  },
+  {
+    id: 5,
+    cat: "yoga",
+    title: "Yoga Terapéutico: Sesión 1 — Respiración",
+    duration: "30:00",
+    free: false,
+    doctor: false,
+    desc: "Pranayama para ansiedad por abstinencia.",
+    plans: ["mes1", "mes2", "mes3", "mes4"],
+  },
+  {
+    id: 3,
+    cat: "autohipnosis",
+    title: "Autohipnosis: Semana 3 — Manejo del craving",
+    duration: "20:15",
+    free: false,
+    doctor: true,
+    desc: "Anclaje hipnótico ante el impulso.",
+    plans: ["mes2", "mes3", "mes4"],
+  },
+  {
+    id: 6,
+    cat: "yoga",
+    title: "Yoga Terapéutico: Sesión 2 — Equilibrio",
+    duration: "35:00",
+    free: false,
+    doctor: false,
+    desc: "Asanas para el sistema nervioso.",
+    plans: ["mes2", "mes3", "mes4"],
+  },
+  {
+    id: 4,
+    cat: "autohipnosis",
+    title: "Autohipnosis: Semana 4 — Consolidación",
+    duration: "25:00",
+    free: false,
+    doctor: true,
+    desc: "Autosugestión de consolidación.",
+    plans: ["mes3", "mes4"],
+  },
 ];
 
 // ═══════════════════════════════════════════════════════
 // CHATBOT DATA
 // ═══════════════════════════════════════════════════════
 
+type QType = "text" | "textarea" | "number" | "select" | "multi" | "scale";
+
+interface Question {
+  id: string;
+  section: string;
+  text: string;
+  type: QType;
+  options?: string[];
+  placeholder?: string;
+  required?: boolean;
+}
+
 const SECTIONS = [
   { id: "identificacion", label: "Datos de Identificación" },
   { id: "motivo", label: "Motivo de Consulta" },
   { id: "consumo", label: "Historia de Consumo" },
-  { id: "psiquiatrico", label: "Antecedentes Psiquiátricos" },
-  { id: "medico", label: "Antecedentes Médicos" },
+  { id: "psiquiatria", label: "Antecedentes Psiquiátricos" },
+  { id: "medicos", label: "Antecedentes Médicos" },
   { id: "social", label: "Situación Social" },
   { id: "cierre", label: "Cierre" },
 ];
-type QType = "text" | "number" | "choice" | "multiselect" | "scale" | "textarea";
-interface Q { id: string; section: string; text: string; type: QType; options?: string[]; placeholder?: string }
 
-const RANGO_EDADES = ["Entre 14 y 18 años", "Entre 18 y 24 años", "De 24 a 36 años", "De 36 a 45 años", "De 45 a 60 años", "De 60 o más años"];
-
-const QUESTIONS: Q[] = [
-  // ── IDENTIFICACIÓN ──────────────────────────────────────
-  { id: "nombre", section: "identificacion", type: "text", placeholder: "Nombre completo",
-    text: "Bienvenido/a. Soy el asistente clínico del Consultorio Holístico.\n\nEsta conversación es estrictamente confidencial y sus respuestas formarán parte de su expediente médico protegido bajo secreto profesional.\n\n¿Cuál es su nombre completo?" },
-  { id: "edad", section: "identificacion", type: "choice", text: "¿En qué rango de edad se encuentra?", options: RANGO_EDADES },
-  { id: "estado_civil", section: "identificacion", type: "choice", text: "¿Cuál es su estado civil?",
-    options: ["Soltero/a", "Casado/a", "Unión libre", "Divorciado/a", "Separado/a", "Viudo/a"] },
-  { id: "escolaridad", section: "identificacion", type: "choice", text: "¿Cuál es su nivel de escolaridad?",
-    options: ["Sin escolaridad formal", "Primaria", "Secundaria", "Bachillerato", "Técnico/Tecnólogo", "Universitario", "Posgrado"] },
-  { id: "ocupacion", section: "identificacion", type: "choice", text: "¿Cuál es su situación laboral actual?",
-    options: ["Empleado/a formal", "Trabajador/a independiente", "Estudiante", "Desempleado/a", "Pensionado/a", "Labores del hogar", "Incapacitado/a"] },
-
-  // ── MOTIVO DE CONSULTA ───────────────────────────────────
-  { id: "motivo_consulta", section: "motivo", type: "choice",
-    text: "¿Qué le trajo a esta consulta hoy?",
+const QUESTIONS: Question[] = [
+  // ── Identificación ──────────────────────────────────────
+  {
+    id: "nombre",
+    section: "identificacion",
+    text: "Para empezar, ¿cómo prefiere que le llamemos?",
+    type: "text",
+    placeholder: "Nombre o apodo",
+    required: true,
+  },
+  {
+    id: "edad",
+    section: "identificacion",
+    text: "¿En qué rango de edad se encuentra? (nos ayuda con estadísticas clínicas)",
+    type: "select",
     options: [
-      "Consumo de sustancias psicoactivas (drogas/alcohol)",
-      "Ansiedad o ataques de pánico",
-      "Depresión o tristeza persistente",
-      "Insomnio o alteraciones del sueño",
-      "Pensamientos obsesivos o compulsivos",
-      "Crisis emocional o situación de crisis",
-      "Problemas de conducta o control de impulsos",
-      "Dependencia a medicamentos (benzodiacepinas, opioides)",
-      "Trastorno de alimentación",
-      "Violencia o trauma psicológico",
-      "Problemas de pareja o familia relacionados con consumo",
-      "Remitido por orden judicial o médica",
-      "Búsqueda de bienestar y prevención",
-    ] },
-  { id: "quien_sugirio", section: "motivo", type: "choice", text: "¿Quién le motivó a buscar atención?",
-    options: ["Decisión propia", "Familiar o pareja", "Amigo/a", "Médico o profesional de salud", "Autoridad judicial", "Empleador", "Otro"] },
+      "Entre 14 y 18 años",
+      "Entre 18 y 24 años",
+      "De 24 a 36 años",
+      "De 36 a 45 años",
+      "De 45 a 60 años",
+      "De 60 o más años",
+    ],
+    required: true,
+  },
+  {
+    id: "genero",
+    section: "identificacion",
+    text: "¿Con qué género se identifica?",
+    type: "select",
+    options: ["Mujer", "Hombre", "Otro", "Prefiero no decir"],
+  },
+  {
+    id: "ciudad",
+    section: "identificacion",
+    text: "¿En qué ciudad o municipio se encuentra actualmente?",
+    type: "text",
+    placeholder: "Ej. Bogotá, Medellín, Cali…",
+  },
 
-  // ── HISTORIA DE CONSUMO ──────────────────────────────────
-  { id: "sustancias", section: "consumo", type: "multiselect",
-    text: "¿Qué sustancias ha consumido alguna vez? Seleccione todas las que apliquen.",
+  // ── Motivo de consulta ──────────────────────────────────
+  {
+    id: "motivo_consulta",
+    section: "motivo",
+    text: "¿Qué le trajo a esta consulta hoy? Elija la opción que mejor describe su situación.",
+    type: "select",
     options: [
-      "Alcohol", "Cigarrillo / Tabaco", "Marihuana / Cannabis", "Cocaína", "Basuco / Crack",
-      "Heroína / Opioides", "Benzodiacepinas (sin prescripción)", "Anfetaminas / Metanfetaminas",
-      "Inhalantes (pegante, gasolina)", "Alucinógenos (LSD, hongos)", "Éxtasis / MDMA",
-      "Ketamina", "Poppers", "Dos de estas sustancias", "Todas las anteriores", "Otras",
-    ] },
-  { id: "edad_inicio", section: "consumo", type: "choice",
-    text: "¿A qué edad probó alguna sustancia por primera vez?", options: RANGO_EDADES },
-  { id: "sustancia_principal", section: "consumo", type: "choice",
-    text: "¿Cuál es su sustancia principal de consumo actualmente?",
-    options: ["Alcohol", "Cigarrillo / Tabaco", "Marihuana / Cannabis", "Cocaína", "Basuco / Crack",
-      "Heroína / Opioides", "Benzodiacepinas", "Anfetaminas", "Otras", "No consumo actualmente"] },
-  { id: "frecuencia", section: "consumo", type: "choice", text: "¿Con qué frecuencia consume actualmente?",
-    options: ["Varias veces al día", "Diariamente", "Varios días a la semana", "1–2 veces por semana", "Ocasionalmente (mensual o menos)", "No consumo actualmente"] },
-  { id: "ultimo_consumo", section: "consumo", type: "choice", text: "¿Cuándo fue la última vez que consumió?",
-    options: ["Hoy", "Esta semana", "Hace una semana", "Hace un mes", "Hace más de un mes", "Nunca he consumido"] },
-  { id: "craving", section: "consumo", type: "scale",
-    text: "Escala del 1 al 10: ¿qué tan fuerte es su deseo de consumir ahora?\n\n1 = Ningún deseo · 10 = Deseo muy intenso" },
-  { id: "abstinencia_escala", section: "consumo", type: "scale",
-    text: "Escala del 1 al 10: ¿qué tan intensos son sus síntomas de abstinencia en este momento?\n\n1 = Sin síntomas · 10 = Síntomas muy intensos (temblor, sudoración, náuseas, ansiedad)" },
-  { id: "intentos_abandono", section: "consumo", type: "choice", text: "¿Ha intentado dejar de consumir anteriormente?",
-    options: ["Sí, varias veces", "Sí, una vez", "No, nunca lo he intentado"] },
+      "Ansiedad o crisis de pánico",
+      "Depresión o decaimiento persistente",
+      "Problemas con el consumo de sustancias",
+      "Dificultad para dejar o reducir el consumo",
+      "Estrés o trauma reciente (incluyendo eventos como sismos u otras emergencias)",
+      "Problemas de sueño",
+      "Ideas de hacerse daño o crisis emocional",
+      "Quiero orientación / evaluación preventiva",
+      "Otro motivo relacionado con salud mental",
+    ],
+    required: true,
+  },
+  {
+    id: "motivo_detalle",
+    section: "motivo",
+    text: "Si lo desea, cuéntenos un poco más con sus palabras (opcional pero muy útil).",
+    type: "textarea",
+    placeholder: "Puede escribir libremente…",
+  },
 
-  // ── ANTECEDENTES PSIQUIÁTRICOS ───────────────────────────
-  { id: "atencion_psicologica", section: "psiquiatrico", type: "choice",
-    text: "¿Ha recibido atención psicológica anteriormente?",
-    options: ["Sí, actualmente estoy en proceso", "Sí, en el pasado (ya finalizado)", "Sí, pero no fue suficiente", "No, nunca"] },
-  { id: "atencion_psiquiatrica", section: "psiquiatrico", type: "choice",
-    text: "¿Ha recibido atención psiquiátrica (con psiquiatra o médico especialista)?",
-    options: ["Sí, actualmente con psiquiatra", "Sí, en el pasado", "Sí, estuve hospitalizado/a", "No, nunca"] },
-  { id: "diagnosticos", section: "psiquiatrico", type: "multiselect",
-    text: "¿Le han diagnosticado alguna de estas condiciones? Seleccione todas las que apliquen.",
-    options: ["Depresión mayor", "Trastorno de ansiedad generalizada", "Trastorno de pánico", "Trastorno bipolar",
-      "Psicosis / Esquizofrenia", "TDAH (déficit de atención)", "Trastorno de personalidad limítrofe (BPD)",
-      "Trastorno obsesivo compulsivo (TOC)", "TEPT (estrés postraumático)", "Trastorno de alimentación",
-      "Trastorno del sueño", "Ninguna de las anteriores"] },
-  { id: "medicacion", section: "psiquiatrico", type: "choice", text: "¿Toma actualmente medicamentos recetados para su salud mental?",
-    options: ["Sí, con regularidad y seguimiento médico", "Sí, pero de forma irregular", "Los tomaba pero los dejé", "No"] },
-  { id: "ideacion", section: "psiquiatrico", type: "choice",
-    text: "Pregunta importante para su seguridad.\n\n¿Ha tenido pensamientos de hacerse daño o quitarse la vida?",
-    options: ["No, nunca", "En el pasado, no actualmente", "Actualmente tengo esos pensamientos"] },
-
-  // ── ANTECEDENTES MÉDICOS ─────────────────────────────────
-  { id: "enfermedades", section: "medico", type: "multiselect",
-    text: "¿Tiene alguna enfermedad médica diagnosticada? Seleccione todas las que apliquen.",
+  // ── Historia de consumo ─────────────────────────────────
+  {
+    id: "edad_inicio",
+    section: "consumo",
+    text: "¿A qué edad probó alguna sustancia por primera vez?",
+    type: "select",
     options: [
-      // Metabólicas
-      "Diabetes tipo 1 o 2", "Obesidad / Sobrepeso", "Hipotiroidismo / Hipertiroidismo", "Síndrome metabólico",
-      // Cardiovasculares
-      "Hipertensión arterial", "Enfermedad coronaria / Infarto", "Arritmia cardiaca", "Insuficiencia cardiaca",
-      // Hepáticas / Infecciosas
-      "Hepatitis B o C", "Cirrosis hepática", "VIH / SIDA", "Tuberculosis",
-      // Neurológicas
-      "Epilepsia / Convulsiones", "Migraña crónica", "Esclerosis múltiple",
-      // Respiratorias
-      "EPOC / Enfisema", "Asma", "Apnea del sueño",
-      // Otras
-      "Cáncer (activo o en remisión)", "Enfermedad renal crónica", "Ninguna de las anteriores",
-    ] },
-  { id: "antecedentes_familiares", section: "medico", type: "choice",
+      "Nunca he consumido",
+      "Entre 14 y 18 años",
+      "Entre 18 y 24 años",
+      "De 24 a 36 años",
+      "De 36 a 45 años",
+      "De 45 a 60 años",
+      "De 60 o más años",
+      "No recuerdo con exactitud",
+    ],
+  },
+  {
+    id: "sustancias",
+    section: "consumo",
+    text: "¿Qué sustancias ha consumido alguna vez? Puede seleccionar varias.",
+    type: "multi",
+    options: [
+      "Ninguna",
+      "Alcohol",
+      "Cigarrillo / tabaco",
+      "Cannabis / marihuana",
+      "Cocaína",
+      "Bazuco / pasta base",
+      "Anfetaminas / estimulantes",
+      "Benzodiacepinas (sin receta o en exceso)",
+      "Opioides / heroína",
+      "Inhalantes",
+      "Otras sustancias",
+    ],
+  },
+  {
+    id: "sustancia_principal",
+    section: "consumo",
+    text: "¿Cuál es su sustancia principal de consumo actual (si aplica)?",
+    type: "select",
+    options: [
+      "No consumo actualmente",
+      "Alcohol",
+      "Cigarrillo / tabaco",
+      "Cannabis",
+      "Cocaína",
+      "Bazuco",
+      "Benzodiacepinas",
+      "Otra",
+    ],
+  },
+  {
+    id: "frecuencia",
+    section: "consumo",
+    text: "¿Con qué frecuencia consume actualmente?",
+    type: "select",
+    options: [
+      "No consumo",
+      "Varias veces al día",
+      "Diariamente",
+      "Varias veces a la semana",
+      "Una vez a la semana",
+      "Algunas veces al mes",
+      "Ocasionalmente",
+    ],
+  },
+  {
+    id: "ultimo_consumo",
+    section: "consumo",
+    text: "¿Cuándo fue la última vez que consumió?",
+    type: "select",
+    options: [
+      "Hoy",
+      "Esta semana que pasó",
+      "Hace una semana",
+      "Hace un mes",
+      "Más de un mes",
+      "Más de seis meses / no aplica",
+    ],
+  },
+  {
+    id: "craving",
+    section: "consumo",
+    text: "Escala del 1 al 10: ¿qué tan fuerte es su deseo de consumir ahora? (1 = ningún deseo · 10 = deseo muy intenso)",
+    type: "scale",
+  },
+  {
+    id: "abstinencia_escala",
+    section: "consumo",
+    text: "Escala del 1 al 10: ¿qué tan intensos son los síntomas de abstinencia o malestar físico/emocional al no consumir? (1 = ninguno · 10 = muy intensos)",
+    type: "scale",
+  },
+
+  // ── Antecedentes psiquiátricos ──────────────────────────
+  {
+    id: "atencion_psicologica",
+    section: "psiquiatria",
+    text: "¿Ha recibido atención psicológica alguna vez?",
+    type: "select",
+    options: [
+      "Sí, actualmente",
+      "Sí, en el pasado",
+      "No, nunca",
+      "Estoy buscando por primera vez",
+    ],
+  },
+  {
+    id: "atencion_psiquiatrica",
+    section: "psiquiatria",
+    text: "¿Ha recibido atención psiquiátrica alguna vez?",
+    type: "select",
+    options: [
+      "Sí, actualmente",
+      "Sí, en el pasado",
+      "No, nunca",
+      "Estoy buscando por primera vez",
+    ],
+  },
+  {
+    id: "diagnosticos",
+    section: "psiquiatria",
+    text: "¿Le han diagnosticado alguna de estas condiciones? Puede seleccionar varias.",
+    type: "multi",
+    options: [
+      "Ninguna de las anteriores",
+      "Trastorno de ansiedad",
+      "Depresión",
+      "Trastorno bipolar",
+      "TEPT / trauma",
+      "TDAH",
+      "Trastorno por uso de sustancias",
+      "Otro diagnóstico de salud mental",
+    ],
+  },
+
+  // ── Antecedentes médicos ────────────────────────────────
+  {
+    id: "enfermedades",
+    section: "medicos",
+    text: "¿Tiene alguna enfermedad médica diagnosticada? Puede seleccionar varias.",
+    type: "multi",
+    options: [
+      "Ninguna",
+      "Diabetes",
+      "Hipertensión / problemas cardíacos",
+      "Hepatitis",
+      "VIH",
+      "Enfermedad tiroidea",
+      "Problemas respiratorios",
+      "Dolor crónico",
+      "Otra condición metabólica o médica",
+    ],
+  },
+  {
+    id: "medicamentos",
+    section: "medicos",
+    text: "¿Toma actualmente algún medicamento (incluido psiquiátrico)?",
+    type: "textarea",
+    placeholder: "Nombre del medicamento y dosis aproximada, o escriba “Ninguno”",
+  },
+  {
+    id: "antecedentes_familiares",
+    section: "medicos",
     text: "¿Hay historial de adicciones o enfermedades mentales en su familia?",
-    options: ["Sí, en varios familiares", "Sí, en algún familiar", "No que yo sepa", "No lo sé"] },
-  { id: "cuantos_familiares", section: "medico", type: "choice",
-    text: "¿En cuántos familiares conoce este antecedente?",
-    options: ["1 familiar", "2 familiares", "3 o más familiares", "No aplica"] },
-  { id: "cuales_familiares", section: "medico", type: "multiselect",
-    text: "¿Cuáles familiares tienen o tuvieron ese antecedente? Seleccione todos los que apliquen.",
-    options: ["Padre", "Madre", "Hermano/a", "Abuelo/a paterno/a", "Abuelo/a materno/a", "Tío/a", "Primo/a", "Hijo/a", "No aplica"] },
+    type: "select",
+    options: ["Sí", "No", "No estoy seguro/a"],
+  },
+  {
+    id: "cuales_familiares",
+    section: "medicos",
+    text: "Si respondió sí: ¿quiénes? Puede seleccionar varios.",
+    type: "multi",
+    options: [
+      "Padre o madre",
+      "Hermanos/as",
+      "Abuelos/as",
+      "Tíos/as",
+      "Otros familiares",
+      "No aplica",
+    ],
+  },
 
-  // ── SITUACIÓN SOCIAL ─────────────────────────────────────
-  { id: "vivienda", section: "social", type: "choice", text: "¿Con quién vive actualmente?",
-    options: ["Solo/a", "Con pareja", "Con familia (padres, hermanos)", "Con hijos", "Con amigos o compañeros", "En institución o albergue", "Sin hogar fijo"] },
-  { id: "apoyo_social", section: "social", type: "choice", text: "¿Cuenta con apoyo familiar o social para su tratamiento?",
-    options: ["Sí, tengo amplio apoyo", "Sí, apoyo limitado", "No tengo apoyo", "Mi familia no sabe que estoy buscando ayuda"] },
-  { id: "estresores", section: "social", type: "multiselect", text: "¿Está enfrentando alguna de estas situaciones actualmente?",
-    options: ["Problemas económicos graves", "Deudas relacionadas al consumo", "Problemas legales / judiciales", "Violencia doméstica o abuso", "Desempleo reciente", "Duelo o pérdida reciente", "Separación o divorcio", "Inestabilidad de vivienda", "Ninguna de las anteriores"] },
+  // ── Situación social ────────────────────────────────────
+  {
+    id: "situacion_laboral",
+    section: "social",
+    text: "¿Cuál es su situación laboral o de estudio actual?",
+    type: "select",
+    options: [
+      "Trabajo estable",
+      "Trabajo informal / inestable",
+      "Estudiante",
+      "Desempleado/a",
+      "Pensionado/a o incapacidad",
+      "Otra",
+    ],
+  },
+  {
+    id: "red_apoyo",
+    section: "social",
+    text: "¿Cuenta con personas de apoyo (familia, pareja, amigos) en este momento?",
+    type: "select",
+    options: [
+      "Sí, una red sólida",
+      "Sí, pero limitada",
+      "Casi nadie",
+      "Me siento solo/a",
+    ],
+  },
+  {
+    id: "impacto_evento",
+    section: "social",
+    text: "¿Algún evento reciente (pérdida, emergencia, sismo u otra crisis) ha afectado su salud mental o su consumo?",
+    type: "select",
+    options: [
+      "Sí, de forma importante",
+      "Un poco",
+      "No especialmente",
+      "Prefiero no detallar",
+    ],
+  },
 
-  // ── CIERRE ───────────────────────────────────────────────
-  { id: "informacion_adicional", section: "cierre", type: "textarea", placeholder: "Información adicional o escriba \"No\"...",
-    text: "Hemos completado la evaluación clínica. Gracias por su confianza y valentía.\n\n¿Hay algo más que el equipo clínico deba saber sobre usted para brindarle la mejor atención?" },
+  // ── Cierre ──────────────────────────────────────────────
+  {
+    id: "motivacion",
+    section: "cierre",
+    text: "En una escala del 1 al 10: ¿qué tan motivado/a se siente a cuidar su salud mental o reducir el consumo? (1 = nada · 10 = totalmente)",
+    type: "scale",
+  },
+  {
+    id: "expectativas",
+    section: "cierre",
+    text: "¿Qué espera de este proceso o de la clínica? (puede ser breve)",
+    type: "textarea",
+    placeholder: "Ej. sentirme más estable, dejar de consumir, hablar con alguien…",
+  },
 ];
-
 // ═══════════════════════════════════════════════════════
 // HELPERS
 // ═══════════════════════════════════════════════════════
@@ -770,23 +1166,20 @@ function formatCOP(n: number) {
 function formatTs(ts: number) {
   return new Date(ts).toLocaleTimeString("es-MX", { hour: "2-digit", minute: "2-digit" });
 }
-function getAck(q: Q, answer: string | string[]): string | null {
-  const val = Array.isArray(answer) ? answer.join(", ") : answer;
-  if (q.id === "nombre") return `Gracias, ${val.split(" ")[0]}. Sus respuestas están protegidas bajo secreto médico.`;
-  if (q.id === "motivo_consulta") return "Gracias por compartir eso. Dar este paso requiere valentía.";
-  if (q.id === "ideacion" && val.includes("Actualmente"))
-    return "⚠️ Gracias por confiar en nosotros. Un médico revisará esto con prioridad.\n\nLínea de la Vida: 800-911-2000 · Emergencias: 911";
-  if (q.id === "craving") return `Nivel de craving registrado: ${val}/10.`;
-  if (q.id === "informacion_adicional") return null;
-  const acks = ["Anotado.", "Registrado.", "Entendido.", "Comprendido.", "Gracias."];
-  return acks[q.id.length % acks.length];
+function getAck(q: Question, answer: string | string[]): string | null {
+  const val = Array.isArray(answer) ? answer.join(", ") : String(answer);
+  if (q.id === "nombre") {
+    const first = val.trim().split(/\s+/)[0] || "paciente";
+    return `Gracias, ${first}. Sus respuestas están protegidas bajo secreto médico.`;
+  }
+  return null;
 }
 
 async function callGemini(answers: Record<string, string>, apiKey: string): Promise<any> {
   const BACKEND = (import.meta.env.VITE_API_URL as string) || "http://localhost:8080";
   const jwt = localStorage.getItem("ch_jwt") || "";
 
-  // ── OPCIÓN 1: Llamar al backend Java (recomendado — la API key queda segura en el servidor)
+  // ── 1) Backend (recomendado) ──
   try {
     const backendRes = await fetch(`${BACKEND}/api/diagnostico/ia`, {
       method: "POST",
@@ -794,87 +1187,93 @@ async function callGemini(answers: Record<string, string>, apiKey: string): Prom
         "Content-Type": "application/json",
         ...(jwt ? { Authorization: `Bearer ${jwt}` } : {}),
       },
-      body: JSON.stringify({ respuestas: answers, historiaId: localStorage.getItem("ch_historia_id") ? Number(localStorage.getItem("ch_historia_id")) : null }),
+      body: JSON.stringify({
+        respuestas: answers,
+        historiaId: localStorage.getItem("ch_historia_id")
+          ? Number(localStorage.getItem("ch_historia_id"))
+          : null,
+      }),
     });
+
     if (backendRes.ok) {
       const backendJson = await backendRes.json();
       if (backendJson.success && backendJson.data) {
-        const raw = typeof backendJson.data === "string" ? backendJson.data : JSON.stringify(backendJson.data);
-        return JSON.parse(raw.replace(/```json?\n?/g, "").replace(/```/g, "").trim());
+        let raw =
+          typeof backendJson.data === "string"
+            ? backendJson.data
+            : JSON.stringify(backendJson.data);
+        raw = raw.replace(/```json\s*/gi, "").replace(/```/g, "").trim();
+        const parsed = JSON.parse(raw);
+        // Guardar para no perder el resultado
+        localStorage.setItem("ch_diagnosis", JSON.stringify(parsed));
+        return parsed;
       }
     }
   } catch {
-    // Backend no disponible → usar Gemini directo como fallback
+    // Backend caído → fallback
   }
 
-  // ── OPCIÓN 2: Fallback — llamar a Gemini directamente (requiere API key en frontend)
-  if (!apiKey) throw new Error("Configure VITE_GEMINI_API_KEY en el .env o inicie el backend con la clave Gemini.");
+  // ── 2) Fallback directo a Gemini (solo si hay key) ──
+  if (!apiKey) {
+    throw new Error(
+      "Backend no disponible y no hay API key. Inicie el backend o configure VITE_GEMINI_API_KEY."
+    );
+  }
 
   const f = (id: string) => (answers[id] || "No respondido").replace(/"/g, "'");
 
-  const prompt = `Eres el Dr. Nikolas Escobar, psiquiatra especialista en adicciones y salud mental con 15 años de experiencia en medicina holística. Recibes la historia clínica de un paciente que busca tratamiento para adicciones y/o enfermedad mental.
-
-Tu rol es doble:
-1. CLÍNICO: Emitir un diagnóstico psiquiátrico y toxicológico preciso basado en DSM-5 y CIE-11.
-2. TERAPÉUTICO: Recomendar el programa de tratamiento del Consultorio Holístico más adecuado para este paciente.
-
-HISTORIA CLÍNICA COMPLETA:
-Nombre: ${f("nombre")} | Edad: ${f("edad")} | Estado civil: ${f("estado_civil")} | Escolaridad: ${f("escolaridad")} | Ocupación: ${f("ocupacion")}
-Motivo de consulta: ${f("motivo_consulta")}
-Quien motivó la consulta: ${f("quien_sugirio")}
-Sustancias consumidas: ${f("sustancias")}
-Edad de inicio de consumo: ${f("edad_inicio")} años
-Sustancia principal: ${f("sustancia_principal")}
-Frecuencia actual: ${f("frecuencia")}
-Último consumo: ${f("ultimo_consumo")}
-Intensidad del craving: ${f("craving")}/10
-Intentos previos de abandono: ${f("intentos_abandono")}
-Síntomas de abstinencia: ${f("abstinencia")}
-Atención psiquiátrica previa: ${f("atencion_previa")}
-Diagnósticos psiquiátricos previos: ${f("diagnosticos")}
-Medicación actual: ${f("medicacion")}
-Ideación suicida o autolesión: ${f("ideacion")}
-Enfermedades médicas: ${f("enfermedades")}
-Antecedentes familiares: ${f("antecedentes_familiares")}
-Situación de vivienda: ${f("vivienda")}
-Apoyo social: ${f("apoyo_social")}
-Estresores actuales: ${f("estresores")}
-Información adicional: ${f("informacion_adicional")}
-
-PROGRAMAS DISPONIBLES EN EL CONSULTORIO:
-- mes1 (Programa Intensivo $3.200.000 COP/mes): 2 consultas psiquiatría IA+médico, 6 sesiones psicología individual, 4 hipnosis clínica con el Dr., 4 auriculoterapia láser anti-craving, 4 yoga & mindfulness virtual, 2 reuniones grupales, biblioteca completa audios+videos, regalo bienvenida.
-  INDICADO PARA: consumo activo, síndrome de abstinencia, craving alto (7-10), diagnóstico dual (adicción + enf. mental), primer mes de tratamiento, riesgo ALTO o CRÍTICO.
-- mes2 (Programa Consolidación $1.800.000 COP/mes): 6 videos autohipnosis nuevos/mes, 4 sesiones psicología, 2 yoga & mindfulness, 2 reuniones grupales, audios seleccionados.
-  INDICADO PARA: paciente ya en abstinencia, mantenimiento, riesgo BAJO o MEDIO, continuidad tras mes1.
-
-Responde ÚNICAMENTE con este JSON válido, sin texto adicional:
+  const prompt = `Eres el Dr. Nikolas Escobar, médico especialista en adicciones y salud mental.
+Analiza esta historia y responde ÚNICAMENTE con JSON válido (sin markdown) con esta estructura:
 {
-  "resumen": "Párrafo clínico de 4-5 oraciones que describe el cuadro clínico completo, patrón de consumo, estado mental actual y factores de riesgo/protección",
+  "resumen": "Resumen clínico en 3-4 oraciones para el paciente",
   "nivel_riesgo": "BAJO|MEDIO|ALTO|CRÍTICO",
-  "nivel_riesgo_justificacion": "Explicación clínica de 1-2 oraciones del nivel de riesgo asignado",
-  "diagnosticos": [{"codigo": "F10.2","nombre": "Nombre diagnóstico DSM-5/CIE-11","descripcion": "Descripción de cómo se manifiesta en este paciente específico"}],
-  "comorbilidades": "Descripción de comorbilidades o 'Sin comorbilidades evidentes'",
-  "especialistas": [{"especialidad": "Nombre del especialista","prioridad": "URGENTE|PRIORITARIO|RECOMENDADO","razon": "Razón clínica"}],
-  "recomendaciones_inmediatas": ["Recomendación 1","Recomendación 2","Recomendación 3","Recomendación 4"],
-  "plan_tratamiento": {"primera_linea": "","segunda_linea": "","seguimiento": ""},
-  "toxicologia": "Evaluación toxicológica detallada",
-  "programa_recomendado": "mes1|mes2",
-  "programa_justificacion": "Explicación clínica",
-  "servicios_adicionales_recomendados": ["Suero Terapia + Audio Binaural|razón clínica"],
-  "mensaje_al_paciente": "Mensaje empático y motivador del doctor al paciente"
-}`;
+  "nivel_riesgo_justificacion": "Por qué ese nivel",
+  "diagnosticos": [{"codigo":"F10.2","nombre":"...","descripcion":"..."}],
+  "recomendaciones_inmediatas": ["..."],
+  "plan_tratamiento": {"primera_linea":"...","segunda_linea":"...","seguimiento":"..."},
+  "programa_recomendado": "mes1|mes2|mes3|mes4",
+  "programa_justificacion": "Por qué ese programa",
+  "mensaje_al_paciente": "Mensaje cálido y claro de qué debe saber y hacer el paciente"
+}
 
-  const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`, {
-    method: "POST", headers: { "Content-Type": "application/json" },
+HISTORIA:
+Nombre: ${f("nombre")} | Edad: ${f("edad")}
+Motivo: ${f("motivo_consulta")}
+Sustancias: ${f("sustancias")} | Principal: ${f("sustancia_principal")}
+Inicio: ${f("edad_inicio")} | Frecuencia: ${f("frecuencia")} | Último: ${f("ultimo_consumo")}
+Craving: ${f("craving")}/10 | Abstinencia: ${f("abstinencia_escala")}/10
+Psicología: ${f("atencion_psicologica")} | Psiquiatría: ${f("atencion_psiquiatrica")}
+Diagnósticos previos: ${f("diagnosticos")}
+Enfermedades: ${f("enfermedades")}
+Familia: ${f("antecedentes_familiares")} ${f("cuantos_familiares")} ${f("cuales_familiares")}
+Motivación: ${f("motivacion")} | Expectativas: ${f("expectativas")}
+
+Responde SOLO el JSON.`;
+
+  // Modelo actual (NO usar gemini-1.5-flash)
+  // Modelo actual (NO usar gemini-1.5-flash ni 3.5 si da 404)
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`;
+
+  const res = await fetch(url, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
       contents: [{ parts: [{ text: prompt }] }],
-      generationConfig: { temperature: 0.3, maxOutputTokens: 2048 },
+      generationConfig: { temperature: 0.3, maxOutputTokens: 4096 },
     }),
   });
-  if (!res.ok) throw new Error(`Gemini error ${res.status} — verifica tu API key`);
+
+  if (!res.ok) {
+    throw new Error(`Gemini error ${res.status} — verifica tu API key y el modelo`);
+  }
+
   const data = await res.json();
   const text: string = data.candidates?.[0]?.content?.parts?.[0]?.text || "";
-  return JSON.parse(text.replace(/```json?\n?/g, "").replace(/```/g, "").trim());
+  const parsed = JSON.parse(
+    text.replace(/```json\s*/gi, "").replace(/```/g, "").trim()
+  );
+  localStorage.setItem("ch_diagnosis", JSON.stringify(parsed));
+  return parsed;
 }
 
 // ═══════════════════════════════════════════════════════
@@ -913,60 +1312,155 @@ function LangSwitcher() {
 // ═══════════════════════════════════════════════════════
 // NAVBAR (páginas internas)
 // ═══════════════════════════════════════════════════════
-
 function NavBar() {
   const { user, logout } = useAuth();
-  const { t } = useLang();
+  const { t, lang, setLang } = useLang();
   const navigate = useNavigate();
   const location = useLocation();
   const [open, setOpen] = useState(false);
+
+  // No mostrar barra en landing ni auth
   if (!user || ["/", "/auth"].includes(location.pathname)) return null;
 
-  const links = [
-    { to: "/historia", label: t("clinicalHistory"), icon: ClipboardList },
-    { to: "/diagnostico", label: t("aiDiagnosis"), icon: Brain },
-    { to: "/tratamientos", label: t("programs"), icon: Pill },
-    { to: "/audios", label: t("audios"), icon: Headphones },
-    ...(user.rol === "ADMIN" ? [{ to: "/admin", label: "Admin", icon: Shield }] : []),
-  ];
+  const linkClass = (path: string) =>
+    clsx(
+      "text-sm px-3 py-1.5 rounded-full transition-colors whitespace-nowrap",
+      location.pathname === path || location.pathname.startsWith(path + "/")
+        ? "bg-primary/15 text-primary font-medium"
+        : "text-muted-foreground hover:text-foreground hover:bg-muted/40"
+    );
+
+  const isAdmin = user.rol === "ADMIN";
+  const isMedico = user.rol === "MEDICO" || user.rol === "ADMIN";
 
   return (
-    <nav className="bg-card border-b border-border sticky top-0 z-50" style={{ fontFamily: "'Plus Jakarta Sans', 'DM Sans', sans-serif" }}>
-      <div className="max-w-6xl mx-auto px-4 flex items-center justify-between h-14">
-        <Link to="/" className="flex items-center gap-2">
-          <img src={clinicLogo} alt="Cuídate Salud Plena" className="w-8 h-8 rounded-full object-cover" />
-          <span className="text-sm font-semibold hidden sm:block">{t("clinicName")}</span>
-        </Link>
-        <div className="hidden lg:flex items-center gap-1">
-          {links.map(l => (
-            <Link key={l.to} to={l.to} className={clsx("flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs transition-colors",
-              location.pathname === l.to ? "bg-primary/15 text-primary" : "text-muted-foreground hover:text-foreground hover:bg-muted")}>
-              <l.icon className="w-3.5 h-3.5" />{l.label}
+    <header className="sticky top-0 z-50 border-b border-border bg-background/90 backdrop-blur-md">
+      <div className="max-w-6xl mx-auto px-4 h-14 flex items-center justify-between gap-3">
+        {/* Logo / nombre */}
+        <button
+          type="button"
+          onClick={() => navigate("/")}
+          className="flex items-center gap-2 shrink-0 text-left"
+        >
+          <div className="w-8 h-8 rounded-full overflow-hidden border border-border">
+            <ImageWithFallback src={clinicLogo} alt="Logo" className="w-full h-full object-cover" />
+          </div>
+          <span className="text-sm font-semibold hidden sm:block max-w-[180px] truncate">
+            {t("clinicName")}
+          </span>
+        </button>
+
+        {/* Links desktop */}
+        <nav className="hidden md:flex items-center gap-1 flex-wrap justify-end">
+          <Link to="/historia" className={linkClass("/historia")}>
+            {t("clinicalHistory")}
+          </Link>
+          <Link to="/diagnostico" className={linkClass("/diagnostico")}>
+            {t("aiDiagnosis")}
+          </Link>
+          <Link to="/tratamientos" className={linkClass("/tratamientos")}>
+            {t("programs")}
+          </Link>
+          <Link to="/audios" className={linkClass("/audios")}>
+            {t("audios")}
+          </Link>
+          <Link to="/mi-historial" className={linkClass("/mi-historial")}>
+            Mi historial
+          </Link>
+          <Link to="/acompanamiento" className={linkClass("/acompanamiento")}>
+            Acompañamiento
+          </Link>
+
+          {isAdmin && (
+            <Link to="/admin" className={linkClass("/admin")}>
+              Admin
             </Link>
-          ))}
-        </div>
-        <div className="flex items-center gap-2">
-          <LangSwitcher />
-          <span className="hidden md:block text-xs text-muted-foreground">{user.name.split(" ")[0]}</span>
-          <button onClick={() => { logout(); navigate("/"); }} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs text-muted-foreground hover:text-foreground hover:bg-muted transition-colors">
-            <LogOut className="w-3.5 h-3.5" />
+          )}
+          {isMedico && (
+            <Link to="/medico" className={linkClass("/medico")}>
+              Panel médico
+            </Link>
+          )}
+        </nav>
+
+        {/* Derecha: idioma + usuario + menú móvil */}
+        <div className="flex items-center gap-2 shrink-0">
+          {/* Idioma (si tienes setLang en el contexto) */}
+          {typeof setLang === "function" && (
+            <select
+              value={lang}
+              onChange={(e) => setLang(e.target.value as Lang)}
+              className="text-xs bg-muted/40 border border-border rounded-lg px-2 py-1"
+            >
+              <option value="es">ES</option>
+              <option value="en">EN</option>
+              <option value="fr">FR</option>
+              <option value="de">DE</option>
+              <option value="pt">PT</option>
+            </select>
+          )}
+
+          <span className="text-xs text-muted-foreground hidden sm:inline max-w-[100px] truncate">
+            {user.name || user.email}
+          </span>
+
+          <button
+            type="button"
+            onClick={() => {
+              logout();
+              navigate("/auth");
+            }}
+            className="p-2 rounded-lg hover:bg-muted text-muted-foreground"
+            title="Cerrar sesión"
+          >
+            <LogOut className="w-4 h-4" />
           </button>
-          <button className="lg:hidden p-1.5 rounded-lg text-muted-foreground hover:bg-muted" onClick={() => setOpen(!open)}>
-            {open ? <X className="w-4 h-4" /> : <Activity className="w-4 h-4" />}
+
+          {/* Menú móvil */}
+          <button
+            type="button"
+            className="md:hidden p-2 rounded-lg hover:bg-muted"
+            onClick={() => setOpen((v) => !v)}
+          >
+            {open ? <X className="w-5 h-5" /> : <ChevronDown className="w-5 h-5" />}
           </button>
         </div>
       </div>
+
+      {/* Panel móvil */}
       {open && (
-        <div className="lg:hidden border-t border-border px-4 py-2 bg-card space-y-1">
-          {links.map(l => (
-            <Link key={l.to} to={l.to} onClick={() => setOpen(false)}
-              className={clsx("flex items-center gap-2 px-3 py-2 rounded-lg text-sm", location.pathname === l.to ? "bg-primary/15 text-primary" : "text-muted-foreground")}>
-              <l.icon className="w-4 h-4" />{l.label}
+        <div className="md:hidden border-t border-border px-4 py-3 flex flex-col gap-1 bg-background">
+          <Link to="/historia" className={linkClass("/historia")} onClick={() => setOpen(false)}>
+            {t("clinicalHistory")}
+          </Link>
+          <Link to="/diagnostico" className={linkClass("/diagnostico")} onClick={() => setOpen(false)}>
+            {t("aiDiagnosis")}
+          </Link>
+          <Link to="/tratamientos" className={linkClass("/tratamientos")} onClick={() => setOpen(false)}>
+            {t("programs")}
+          </Link>
+          <Link to="/audios" className={linkClass("/audios")} onClick={() => setOpen(false)}>
+            {t("audios")}
+          </Link>
+          <Link to="/mi-historial" className={linkClass("/mi-historial")} onClick={() => setOpen(false)}>
+            Mi historial
+          </Link>
+          <Link to="/acompanamiento" className={linkClass("/acompanamiento")} onClick={() => setOpen(false)}>
+            Acompañamiento
+          </Link>
+          {isAdmin && (
+            <Link to="/admin" className={linkClass("/admin")} onClick={() => setOpen(false)}>
+              Admin
             </Link>
-          ))}
+          )}
+          {isMedico && (
+            <Link to="/medico" className={linkClass("/medico")} onClick={() => setOpen(false)}>
+              Panel médico
+            </Link>
+          )}
         </div>
       )}
-    </nav>
+    </header>
   );
 }
 
@@ -1105,7 +1599,7 @@ function SiteFooter() {
 // CONTACT SECTION — formulario de sugerencias y citas
 // ═══════════════════════════════════════════════════════
 
-const WA_NUMBER = "573001234567"; // ← Reemplaza con el número real de WhatsApp de la clínica
+const WA_NUMBER = "573114048112"; // ← Reemplaza con el número real de WhatsApp de la clínica
 
 function ContactSection() {
   const [form, setForm] = useState({ nombre: "", telefono: "", tipo: "", mensaje: "" });
@@ -1306,7 +1800,44 @@ function LandingPage() {
         </div>
       </nav>
 
+      {/* Apoyo post-terremoto Colombia 2026 */}
+      <div className="mx-auto max-w-5xl px-4 mb-6">
+        <div className="rounded-2xl border border-amber-500/30 bg-amber-500/10 p-4 md:p-5">
+          <p className="text-[10px] uppercase tracking-widest text-amber-400/90 mb-1"
+             style={{ fontFamily: "'DM Mono', monospace" }}>
+            Apoyo en salud mental · Colombia
+          </p>
+          <h2 className="text-base md:text-lg font-semibold mb-1">
+            Si el sismo del 10 de agosto te afectó (o sigues con miedo, insomnio o ansiedad)
+          </h2>
+          <p className="text-sm text-muted-foreground mb-3 leading-relaxed">
+            Es normal sentir que “aún tiembla”, dificultad para dormir o mucha angustia.
+            Aquí puedes hablar, registrar cómo te sientes y, si lo deseas, avanzar con un
+            plan con psicólogos, médicos o psiquiatras de la clínica.
+          </p>
+          <div className="flex flex-wrap gap-2">
+            <button
+              onClick={() => navigate(user ? "/acompanamiento" : "/auth")}
+              className="text-sm font-semibold px-4 py-2.5 rounded-xl"
+              style={{ background: "linear-gradient(135deg, #0ccec6, #07a8a2)", color: "#031014" }}
+            >
+              Quiero hablar / acompañamiento
+            </button>
+            <button
+              onClick={() => navigate(user ? "/historia" : "/auth")}
+              className="text-sm px-4 py-2.5 rounded-xl border border-border"
+            >
+              Evaluación de salud mental
+            </button>
+          </div>
+          <p className="text-[11px] text-muted-foreground mt-3">
+            Emergencia: <strong>Línea de la Vida 800-911-2000</strong> · Emergencias <strong>123</strong>
+          </p>
+        </div>
+      </div>
+
       {/* ── HERO ────────────────────────────────────────── */}
+
       <section className="relative min-h-[92vh] flex items-center overflow-hidden">
         {/* Fondo: imagen de la clínica + overlay degradado */}
         <div className="absolute inset-0 z-0">
@@ -1746,13 +2277,29 @@ function AuthPage() {
   };
 
   const submitForgot = async (e: React.FormEvent) => {
-    e.preventDefault(); setError(""); setLoading(true);
+    e.preventDefault();
+    setError("");
+    setLoading(true);
     try {
       const token = await forgotPassword(resetEmail);
-      if (!token) { setError("No encontramos una cuenta con ese correo."); return; }
-      setResetToken(token); // En producción esto iría al email, NO al frontend
+      if (!token) {
+        setError("No encontramos una cuenta con ese correo.");
+        return;
+      }
+      // NO mostrar el token al usuario en producción
+      // El correo ya lo envía el backend (EmailService)
+      setResetToken(null);
       setAuthView("reset");
-    } finally { setLoading(false); }
+      setError("");
+      // Mensaje orientativo (puedes usar un state `info` si prefieres)
+      alert(
+        "Si el correo existe, enviamos un código a su bandeja. Revise también spam. Luego péguelo en la siguiente pantalla."
+      );
+    } catch {
+      setError("No se pudo enviar el código. Intente de nuevo.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   const submitReset = async (e: React.FormEvent) => {
@@ -1883,21 +2430,53 @@ function AuthPage() {
                   <p className="text-[10px] text-amber-300/50 text-center mt-1">Válido por 15 minutos</p>
                 </div>
               )}
-              <form onSubmit={submitReset} className="space-y-4">
-                <div><label className={labelClass} style={{ fontFamily: "'DM Mono', monospace" }}>CÓDIGO DE VERIFICACIÓN</label>
-                  <input value={tokenInput} onChange={e => setTokenInput(e.target.value.toUpperCase())} placeholder="ABC123" required maxLength={6}
-                    className={clsx(inputClass, "text-center tracking-widest font-bold")} style={{ fontFamily: "'DM Mono', monospace" }} /></div>
-                <div><label className={labelClass} style={{ fontFamily: "'DM Mono', monospace" }}>{t("newPassword").toUpperCase()}</label>
-                  <div className="relative">
-                    <input type={showNewPass ? "text" : "password"} value={newPass} onChange={e => setNewPass(e.target.value)} placeholder="••••••••" required minLength={6} className={clsx(inputClass, "pr-11")} />
-                    <button type="button" onClick={() => setShowNewPass(!showNewPass)} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground/50">{showNewPass ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}</button>
+
+                <form onSubmit={submitReset} className="space-y-4">
+                  <div>
+                    <label className={labelClass} style={{ fontFamily: "'DM Mono', monospace" }}>
+                      CÓDIGO DE VERIFICACIÓN
+                    </label>
+                    <input
+                      value={tokenInput}
+                      onChange={(e) => setTokenInput(e.target.value.trim())}
+                      placeholder="Pegue el código que llegó a su correo"
+                      required
+                      className={clsx(inputClass, "text-sm")}
+                    />
                   </div>
-                </div>
-                {error && <p className="text-xs text-destructive">{error}</p>}
-                <button type="submit" disabled={loading} className="w-full py-3 rounded-xl bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 transition-colors disabled:opacity-60 flex items-center justify-center gap-2">
-                  {loading && <Loader2 className="w-4 h-4 animate-spin" />}{t("resetPassword")}
-                </button>
-              </form>
+                  <div>
+                    <label className={labelClass} style={{ fontFamily: "'DM Mono', monospace" }}>
+                      {t("newPassword").toUpperCase()}
+                    </label>
+                    <div className="relative">
+                      <input
+                        type={showNewPass ? "text" : "password"}
+                        value={newPass}
+                        onChange={(e) => setNewPass(e.target.value)}
+                        placeholder="••••••••"
+                        required
+                        minLength={6}
+                        className={clsx(inputClass, "pr-11")}
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowNewPass(!showNewPass)}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground/50"
+                      >
+                        {showNewPass ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                      </button>
+                    </div>
+                  </div>
+                  {error && <p className="text-xs text-destructive">{error}</p>}
+                  <button
+                    type="submit"
+                    disabled={loading}
+                    className="w-full py-3 rounded-xl bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 transition-colors disabled:opacity-60 flex items-center justify-center gap-2"
+                  >
+                    {loading && <Loader2 className="w-4 h-4 animate-spin" />}
+                    {t("resetPassword")}
+                  </button>
+                </form>
             </>
           )}
 
@@ -1930,232 +2509,444 @@ interface Msg { id: string; role: "bot" | "user"; content: string; ts: number; i
 function HistoriaPage() {
   const navigate = useNavigate();
   const { user } = useAuth();
-  const [consentAceptado, setConsentAceptado] = useState(() =>
-    localStorage.getItem("ch_consent_accepted") === "true"
+  const [consentAceptado, setConsentAceptado] = useState(
+    () => localStorage.getItem("ch_consent_accepted") === "true"
   );
   const [msgs, setMsgs] = useState<Msg[]>([]);
   const [answers, setAnswers] = useState<Map<string, string | string[]>>(new Map());
   const [qIdx, setQIdx] = useState(0);
-  const [text, setText] = useState(""); const [selected, setSelected] = useState<string[]>([]); const [scaleVal, setScaleVal] = useState<number | null>(null);
+  const [text, setText] = useState("");
+  const [selected, setSelected] = useState<string[]>([]);
+  const [scaleVal, setScaleVal] = useState<number | null>(null);
   const [isTyping, setIsTyping] = useState(false);
+  const [saving, setSaving] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
+  const answeringRef = useRef(false); // ← AQUÍ
   const currentQ = QUESTIONS[qIdx];
+  const API = (import.meta.env.VITE_API_URL as string) || "http://localhost:8080";
 
-  // All hooks must come before any conditional return
   useEffect(() => {
     if (!consentAceptado) return;
-    const greeting = user ? `Hola, ${user.name.split(" ")[0]}. ` : "";
-    setMsgs([{ id: "init", role: "bot", ts: Date.now(), content: greeting + QUESTIONS[0].text }]);
-  }, [consentAceptado]);
-  useEffect(() => { bottomRef.current?.scrollIntoView({ behavior: "smooth" }); }, [msgs, isTyping]);
-  useEffect(() => { setText(""); setSelected([]); setScaleVal(null); }, [qIdx]);
+    const greeting = user?.name ? `Hola, ${user.name.split(" ")[0]}. ` : "";
+    setMsgs([
+      {
+        id: "init",
+        role: "bot",
+        ts: Date.now(),
+        content: greeting + QUESTIONS[0].text,
+      },
+    ]);
+  }, [consentAceptado, user]);
+
+  useEffect(() => {
+    bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [msgs, isTyping]);
+
+  useEffect(() => {
+    setText("");
+    setSelected([]);
+    setScaleVal(null);
+  }, [qIdx]);
 
   function aceptarConsent() {
     localStorage.setItem("ch_consent_accepted", "true");
     setConsentAceptado(true);
   }
 
-  // Mostrar consentimiento informado antes de iniciar la historia
-  if (!consentAceptado) {
-    return (
-      <div className="min-h-screen bg-background flex items-center justify-center px-4 py-10" style={{ fontFamily: "'Plus Jakarta Sans', 'DM Sans', sans-serif" }}>
-        <div className="w-full max-w-2xl bg-card border border-border rounded-3xl overflow-hidden shadow-2xl">
-          {/* Encabezado */}
-          <div className="bg-primary/10 border-b border-primary/20 px-7 py-5 flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-primary/20 border border-primary/30 flex items-center justify-center shrink-0">
-              <ClipboardList className="w-5 h-5 text-primary" />
-            </div>
-            <div>
-              <p className="text-xs text-primary uppercase tracking-widest mb-0.5" style={{ fontFamily: "'DM Mono', monospace" }}>Documento médico · Obligatorio</p>
-              <h2 className="font-bold text-lg">Consentimiento Informado</h2>
-            </div>
-          </div>
+  function addMsg(m: Omit<Msg, "id">) {
+    setMsgs((p) => [...p, { ...m, id: `${m.role}-${Date.now()}-${Math.random()}` }]);
+  }
 
-          {/* Cuerpo */}
-          <div className="px-7 py-6 space-y-4 max-h-[60vh] overflow-y-auto">
-            <div className="bg-primary/5 border border-primary/15 rounded-xl p-4">
-              <p className="text-sm font-semibold text-primary mb-1">Clínica Virtual · Consultorio Holístico para Adicciones y Salud Mental</p>
-              <p className="text-xs text-muted-foreground">Dr. Nikolas Escobar — Director Médico</p>
+  async function finalizarHistoria(flat: Record<string, string>) {
+    setSaving(true);
+    localStorage.setItem("ch_answers", JSON.stringify(flat));
+    try {
+      const jwt = localStorage.getItem("ch_jwt") || "";
+      const res = await fetch(`${API}/api/historia`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          ...(jwt ? { Authorization: `Bearer ${jwt}` } : {}),
+        },
+        body: JSON.stringify({
+          respuestas: flat,
+          consentimientoAceptado: true,
+        }),
+      });
+      if (res.ok) {
+        const json = await res.json();
+        const id = json?.data?.id ?? json?.data?.historiaId ?? json?.id;
+        if (id) localStorage.setItem("ch_historia_id", String(id));
+      }
+    } catch {
+      // backend no disponible
+    } finally {
+      setSaving(false);
+      addMsg({
+        role: "bot",
+        ts: Date.now(),
+        content: "✓ Evaluación completada. Redirigiendo al análisis diagnóstico con IA...",
+      });
+      setTimeout(() => navigate("/diagnostico"), 1500);
+    }
+  }
+
+    function submitAnswer(answer: string | string[]) {
+      if (answeringRef.current) return;
+      if (answer == null) return;
+      if (Array.isArray(answer) && answer.length === 0) return;
+      if (typeof answer === "string" && !String(answer).trim()) return;
+
+      const q = QUESTIONS[qIdx];
+      if (!q) return;
+
+      answeringRef.current = true;
+
+      addMsg({
+        role: "user",
+        content: Array.isArray(answer) ? answer.join(", ") : String(answer),
+        ts: Date.now(),
+      });
+
+      const newAnswers = new Map(answers).set(q.id, answer);
+      setAnswers(newAnswers);
+      setText("");
+      setSelected([]);
+      setScaleVal(null);
+      setIsTyping(true);
+
+      window.setTimeout(() => {
+        try {
+          setIsTyping(false);
+
+          const ack = getAck(q, answer);
+          const isLast = qIdx >= QUESTIONS.length - 1;
+          const isRisk =
+            q.id === "ideacion" &&
+            String(Array.isArray(answer) ? answer[0] : answer).includes("Actualmente");
+
+          if (ack) {
+            addMsg({
+              role: "bot",
+              content: ack,
+              ts: Date.now(),
+              isWarning: !!isRisk,
+            });
+          }
+
+          if (isLast) {
+            const flat: Record<string, string> = {};
+            newAnswers.forEach((v, k) => {
+              flat[k] = Array.isArray(v) ? v.join(", ") : String(v);
+            });
+            window.setTimeout(() => finalizarHistoria(flat), 500);
+            return;
+          }
+
+          const nextQ = QUESTIONS[qIdx + 1];
+          if (!nextQ) return;
+
+          const sectionChanged = nextQ.section !== q.section;
+          const sectionLabel = sectionChanged
+            ? SECTIONS.find((s) => s.id === nextQ.section)?.label
+            : null;
+
+          setQIdx((i) => i + 1);
+
+          window.setTimeout(() => {
+            addMsg({
+              role: "bot",
+              ts: Date.now(),
+              content: sectionLabel
+                ? `— ${sectionLabel} —\n\n${nextQ.text}`
+                : nextQ.text,
+            });
+          }, 250);
+        } finally {
+          answeringRef.current = false;
+        }
+      }, 350);
+    }
+
+    // ── Consentimiento informado (obligatorio) ─────────────────
+    if (!consentAceptado) {
+      return (
+        <div
+          className="min-h-screen bg-background flex items-center justify-center px-4 py-10"
+          style={{ fontFamily: "'Plus Jakarta Sans', 'DM Sans', sans-serif" }}
+        >
+          <div className="w-full max-w-2xl bg-card border border-border rounded-3xl overflow-hidden shadow-2xl">
+            <div className="bg-primary/10 border-b border-primary/20 px-7 py-5 flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-primary/20 border border-primary/30 flex items-center justify-center shrink-0">
+                <ClipboardList className="w-5 h-5 text-primary" />
+              </div>
+              <div>
+                <p
+                  className="text-xs text-primary uppercase tracking-widest mb-0.5"
+                  style={{ fontFamily: "'DM Mono', monospace" }}
+                >
+                  Documento médico · Obligatorio
+                </p>
+                <h2 className="font-bold text-lg">Consentimiento Informado</h2>
+              </div>
             </div>
 
-            <p className="text-sm text-foreground/80 leading-relaxed">
-              Yo, el/la paciente, manifiesto libre y voluntariamente mi consentimiento para iniciar el proceso de evaluación clínica y eventual tratamiento en el <strong>Consultorio Holístico Cuídate Salud Plena</strong>.
-            </p>
+            <div className="px-7 py-6 space-y-4 max-h-[60vh] overflow-y-auto">
+              <div className="bg-primary/5 border border-primary/15 rounded-xl p-4">
+                <p className="text-sm font-semibold text-primary mb-1">
+                  Clínica Virtual · Consultorio Holístico para Adicciones y Salud Mental
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  Dr. Nikolas Escobar — Director Médico
+                </p>
+              </div>
 
-            <div className="space-y-3">
-              {[
-                { title: "1. Confidencialidad", body: "Toda la información que proporcione es estrictamente confidencial y está protegida por el secreto médico profesional, conforme a la Ley 1581 de 2012 (Protección de Datos Personales) y la Resolución 1995 de 1999 del Ministerio de Salud de Colombia." },
-                { title: "2. Finalidad clínica", body: "Las respuestas de la historia clínica serán procesadas por inteligencia artificial (Gemini AI) y revisadas por el Dr. Escobar para generar un diagnóstico preliminar y recomendar el plan terapéutico más adecuado." },
-                { title: "3. Almacenamiento de datos", body: "Su información clínica se almacenará de forma segura en nuestra plataforma digital cifrada. No será compartida con terceros sin su autorización expresa, salvo en casos de riesgo vital inminente." },
-                { title: "4. Voluntariedad", body: "Su participación es completamente voluntaria. Puede detener el proceso en cualquier momento y solicitar la eliminación de sus datos comunicándose con nuestro equipo." },
-                { title: "5. Diagnóstico asistido por IA", body: "El diagnóstico generado por inteligencia artificial es una herramienta de apoyo clínico y NO reemplaza la evaluación presencial del médico. Será validado y complementado por el Dr. Escobar." },
-                { title: "6. Derechos del paciente", body: "Tiene derecho a acceder, rectificar o eliminar su información en cualquier momento. Para ejercer estos derechos, escribanos por WhatsApp o al correo de la clínica." },
-              ].map(item => (
-                <div key={item.title} className="bg-muted/30 border border-border rounded-xl p-4">
-                  <p className="text-xs font-semibold text-primary mb-1">{item.title}</p>
-                  <p className="text-xs text-muted-foreground leading-relaxed">{item.body}</p>
-                </div>
-              ))}
-            </div>
-
-            <div className="bg-amber-500/10 border border-amber-500/25 rounded-xl p-4 flex gap-3">
-              <AlertTriangle className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
-              <p className="text-xs text-amber-300/90 leading-relaxed">
-                Si en cualquier momento experimenta una emergencia de salud mental, llame inmediatamente a la <strong>Línea de la Vida: 800-911-2000</strong> o al número de emergencias <strong>123</strong>.
+              <p className="text-sm text-foreground/80 leading-relaxed">
+                Yo, el/la paciente, manifiesto libre y voluntariamente mi consentimiento para iniciar
+                el proceso de evaluación clínica y eventual tratamiento en el{" "}
+                <strong>Consultorio Holístico Cuídate Salud Plena</strong>.
               </p>
-            </div>
-          </div>
 
-          {/* Pie */}
-          <div className="px-7 py-5 border-t border-border bg-muted/20">
-            <p className="text-xs text-muted-foreground mb-4 text-center">
-              Al hacer clic en <strong>"Acepto y continúo"</strong> confirma que ha leído y acepta los términos del presente consentimiento informado.
-            </p>
-            <div className="flex gap-3">
-              <button onClick={() => navigate("/")} className="flex-1 py-3 rounded-xl border border-border text-sm text-muted-foreground hover:border-primary/30 transition-colors">
-                Volver al inicio
-              </button>
-              <button onClick={aceptarConsent}
-                className="flex-1 py-3 rounded-xl text-sm font-semibold transition-all flex items-center justify-center gap-2 shadow-lg shadow-primary/20"
-                style={{ background: "linear-gradient(135deg, #0ccec6, #07a8a2)", color: "#031014" }}>
-                <Check className="w-4 h-4" /> Acepto y continúo
-              </button>
+              <div className="space-y-3">
+                {[
+                  {
+                    title: "1. Confidencialidad",
+                    body: "Toda la información que proporcione es estrictamente confidencial y está protegida por el secreto médico profesional, conforme a la Ley 1581 de 2012 y la Resolución 1995 de 1999.",
+                  },
+                  {
+                    title: "2. Finalidad clínica",
+                    body: "Las respuestas serán procesadas por IA y revisadas por el equipo médico para orientar el plan terapéutico.",
+                  },
+                  {
+                    title: "3. Almacenamiento de datos",
+                    body: "Su información se almacenará de forma segura. No se compartirá con terceros sin autorización, salvo riesgo vital inminente.",
+                  },
+                  {
+                    title: "4. Voluntariedad",
+                    body: "Puede detener el proceso y solicitar la eliminación de sus datos en cualquier momento.",
+                  },
+                  {
+                    title: "5. Diagnóstico asistido por IA",
+                    body: "La IA es un apoyo clínico y NO reemplaza la evaluación de un profesional de la salud.",
+                  },
+                  {
+                    title: "6. Derechos del paciente",
+                    body: "Puede acceder, rectificar o eliminar su información. Escríbanos por WhatsApp o al correo de la clínica.",
+                  },
+                ].map((item) => (
+                  <div key={item.title} className="bg-muted/30 border border-border rounded-xl p-4">
+                    <p className="text-xs font-semibold text-primary mb-1">{item.title}</p>
+                    <p className="text-xs text-muted-foreground leading-relaxed">{item.body}</p>
+                  </div>
+                ))}
+              </div>
+
+              <div className="bg-amber-500/10 border border-amber-500/25 rounded-xl p-4 flex gap-3">
+                <AlertTriangle className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
+                <p className="text-xs text-amber-300/90 leading-relaxed">
+                  Emergencia de salud mental:{" "}
+                  <strong>Línea de la Vida 800-911-2000</strong> o <strong>123</strong>.
+                </p>
+              </div>
+            </div>
+
+            <div className="px-7 py-5 border-t border-border bg-muted/20">
+              <p className="text-xs text-muted-foreground mb-4 text-center">
+                Al hacer clic en <strong>"Acepto y continúo"</strong> acepta este consentimiento
+                informado.
+              </p>
+              <div className="flex gap-3">
+                <button
+                  type="button"
+                  onClick={() => navigate("/")}
+                  className="flex-1 py-3 rounded-xl border border-border text-sm text-muted-foreground"
+                >
+                  Volver al inicio
+                </button>
+                <button
+                  type="button"
+                  onClick={aceptarConsent}
+                  className="flex-1 py-3 rounded-xl text-sm font-semibold flex items-center justify-center gap-2"
+                  style={{
+                    background: "linear-gradient(135deg, #0ccec6, #07a8a2)",
+                    color: "#031014",
+                  }}
+                >
+                  <Check className="w-4 h-4" /> Acepto y continúo
+                </button>
+              </div>
             </div>
           </div>
         </div>
-      </div>
-    );
-  }
-
-  function addMsg(m: Omit<Msg, "id">) { setMsgs(p => [...p, { ...m, id: `${m.role}-${Date.now()}-${Math.random()}` }]); }
-
-  function submitAnswer(answer: string | string[]) {
-    if (!answer || (Array.isArray(answer) && answer.length === 0)) return;
-    const q = QUESTIONS[qIdx];
-    addMsg({ role: "user", content: Array.isArray(answer) ? answer.join(", ") : answer, ts: Date.now() });
-    const newAnswers = new Map(answers).set(q.id, answer);
-    setAnswers(newAnswers); setIsTyping(true);
-    setTimeout(() => {
-      setIsTyping(false);
-      const ack = getAck(q, answer); const isLast = qIdx === QUESTIONS.length - 1;
-      const isRisk = q.id === "ideacion" && (Array.isArray(answer) ? answer[0] : answer).includes("Actualmente");
-      if (ack) addMsg({ role: "bot", content: ack, ts: Date.now(), isWarning: isRisk });
-      if (isLast) {
-        const flat: Record<string, string> = {};
-        newAnswers.forEach((v, k) => { flat[k] = Array.isArray(v) ? v.join(", ") : v; });
-        localStorage.setItem("ch_answers", JSON.stringify(flat));
-        // Guardar historia en el backend Java (silencioso, no bloquea la navegación)
-        const BACKEND = (import.meta.env.VITE_API_URL as string) || "http://localhost:8080";
-        const jwt = localStorage.getItem("ch_jwt") || "";
-        fetch(`${BACKEND}/api/historia`, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            ...(jwt ? { Authorization: `Bearer ${jwt}` } : {}),
-          },
-          body: JSON.stringify({ respuestas: flat, consentimientoAceptado: true }),
-        }).then(r => r.json()).then(j => {
-          if (j.success && j.data?.id) localStorage.setItem("ch_historia_id", String(j.data.id));
-        }).catch(() => { /* backend no disponible — continúa con localStorage */ });
-        setTimeout(() => { addMsg({ role: "bot", ts: Date.now(), content: "✓ Evaluación completada. Redirigiendo al análisis diagnóstico con IA..." }); setTimeout(() => navigate("/diagnostico"), 1500); }, 600);
-        return;
-      }
-      setTimeout(() => {
-        const nextQ = QUESTIONS[qIdx + 1]; const sectionChanged = nextQ.section !== q.section;
-        const sectionLabel = sectionChanged ? SECTIONS.find(s => s.id === nextQ.section)?.label : null;
-        addMsg({ role: "bot", ts: Date.now(), content: sectionLabel ? `— ${sectionLabel} —\n\n${nextQ.text}` : nextQ.text });
-        setQIdx(p => p + 1);
-      }, ack ? 400 : 150);
-    }, 700 + Math.random() * 400);
-  }
-
-  function handleSend() {
-    if (!currentQ) return;
-    if (["text", "textarea", "number"].includes(currentQ.type)) { if (text.trim()) submitAnswer(text.trim()); }
-    else if (currentQ.type === "scale") { if (scaleVal !== null) submitAnswer(String(scaleVal)); }
-    else if (currentQ.type === "multiselect") { if (selected.length > 0) submitAnswer(selected); }
-  }
+      );
+    }
 
   const completedSections = new Set<string>();
   for (const q of QUESTIONS.slice(0, qIdx)) completedSections.add(q.section);
 
   return (
-    <div className="h-screen flex flex-col bg-background" style={{ fontFamily: "'Plus Jakarta Sans', 'DM Sans', sans-serif" }}>
-      <div className="flex flex-1 min-h-0">
-        <aside className="hidden md:flex flex-col w-52 border-r border-border bg-card shrink-0">
-          <div className="px-4 py-4 border-b border-border">
-            <p className="text-[10px] text-muted-foreground uppercase tracking-widest" style={{ fontFamily: "'DM Mono', monospace" }}>Historia Clínica</p>
-          </div>
-          <nav className="flex-1 py-2 overflow-y-auto">
-            {SECTIONS.map(sec => {
-              const done = completedSections.has(sec.id); const curr = sec.id === currentQ?.section;
-              const qs = QUESTIONS.filter(q => q.section === sec.id); const answered = qs.filter(q => answers.has(q.id)).length;
-              return (
-                <div key={sec.id} className={clsx("flex items-start gap-2 px-4 py-2.5 transition-colors", curr && "bg-primary/10")}>
-                  <div className="mt-0.5 shrink-0">{done ? <CheckCircle className="w-3.5 h-3.5 text-primary" /> : <Circle className={clsx("w-3.5 h-3.5", curr ? "text-primary" : "text-border")} />}</div>
-                  <div><p className={clsx("text-xs leading-tight", curr ? "text-foreground font-medium" : done ? "text-muted-foreground" : "text-muted-foreground/50")}>{sec.label}</p>
-                    {curr && <p className="text-[10px] text-primary/60 mt-0.5" style={{ fontFamily: "'DM Mono', monospace" }}>{answered}/{qs.length}</p>}</div>
-                </div>
-              );
-            })}
-          </nav>
-          <div className="px-4 py-3 border-t border-border">
-            <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground/40" style={{ fontFamily: "'DM Mono', monospace" }}>
-              <span className="w-1.5 h-1.5 rounded-full bg-primary/60" />Conversación cifrada
+    <div
+      className="min-h-screen bg-background flex"
+      style={{ fontFamily: "'Plus Jakarta Sans', 'DM Sans', sans-serif" }}
+    >
+      <aside className="hidden md:flex w-56 flex-col border-r border-border bg-card/50 p-4 gap-1">
+        <p className="text-[10px] uppercase tracking-widest text-muted-foreground mb-3 px-2">
+          Historia clínica
+        </p>
+        {SECTIONS.map((sec) => {
+          const qs = QUESTIONS.filter((q) => q.section === sec.id);
+          const answered = qs.filter((q) => answers.has(q.id)).length;
+          const active = currentQ?.section === sec.id;
+          const done = completedSections.has(sec.id) && !active;
+          return (
+            <div
+              key={sec.id}
+              className={clsx(
+                "flex items-center gap-2 px-2 py-2 rounded-lg text-xs",
+                active && "bg-primary/10 text-primary",
+                done && "text-muted-foreground",
+                !active && !done && "text-muted-foreground/60"
+              )}
+            >
+              {done ? (
+                <CheckCircle className="w-3.5 h-3.5 text-primary" />
+              ) : (
+                <Circle className={clsx("w-3.5 h-3.5", active ? "text-primary" : "opacity-40")} />
+              )}
+              <span className="flex-1">{sec.label}</span>
+              <span className="text-[10px] opacity-60">
+                {answered}/{qs.length}
+              </span>
             </div>
-          </div>
-        </aside>
-        <main className="flex-1 flex flex-col min-w-0 min-h-0">
-          <header className="flex items-center justify-between px-5 py-3 border-b border-border bg-card shrink-0">
-            <div className="flex items-center gap-3">
-              <div className="w-7 h-7 rounded-full overflow-hidden border border-border shrink-0">
-                <ImageWithFallback src={doctorPhoto} alt="Dr." className="w-full h-full object-cover object-top" />
-              </div>
-              <div>
-                <h1 className="text-sm font-medium">Historia Clínica · Consultorio Holístico</h1>
-                <p className="text-[10px] text-muted-foreground" style={{ fontFamily: "'DM Mono', monospace" }}>
-                  {SECTIONS.find(s => s.id === currentQ?.section)?.label}
-                </p>
-              </div>
-            </div>
-            <span className="text-[10px] text-muted-foreground/50" style={{ fontFamily: "'DM Mono', monospace" }}>{qIdx + 1}/{QUESTIONS.length}</span>
-          </header>
-          <div className="flex-1 overflow-y-auto px-4 md:px-8 py-5 space-y-4">
-            {msgs.map(m => <ChatBubble key={m.id} msg={m} />)}
-            {isTyping && <TypingDots />}
-            <div ref={bottomRef} />
-          </div>
-          {currentQ && !isTyping && (
-            <ChatInput q={currentQ} text={text} setText={setText} selected={selected}
-              toggleOption={(o: string) => setSelected(p => p.includes(o) ? p.filter(x => x !== o) : [...p, o])}
-              scaleVal={scaleVal} setScaleVal={setScaleVal} onSend={handleSend} onChoice={(o: string) => submitAnswer(o)} />
-          )}
-        </main>
-      </div>
-    </div>
-  );
-}
+          );
+        })}
+        <p className="mt-auto text-[10px] text-muted-foreground/50 px-2">
+          {qIdx + 1}/{QUESTIONS.length} · Conversación cifrada
+        </p>
+      </aside>
+
+         <div className="flex-1 flex flex-col min-w-0">
+           {/* Mensajes */}
+           <div className="flex-1 overflow-y-auto px-4 py-6 space-y-4">
+             {msgs.map((m) => (
+               <ChatBubble key={m.id} msg={m} />
+             ))}
+             {isTyping && <TypingDots />}
+             {saving && (
+               <p className="text-xs text-center text-muted-foreground">
+                 Guardando historia clínica...
+               </p>
+             )}
+             <div ref={bottomRef} />
+           </div>
+
+           {/* Input */}
+           <div className="border-t border-border bg-card/80 px-4 py-3 pb-6">
+             {currentQ && !saving && !isTyping && (
+               <ChatInput
+                 q={currentQ}
+                 text={text}
+                 setText={setText}
+                 selected={selected}
+                 toggleOption={(opt: string) =>
+                   setSelected((s) =>
+                     s.includes(opt) ? s.filter((x) => x !== opt) : [...s, opt]
+                   )
+                 }
+                 scaleVal={scaleVal}
+                 setScaleVal={setScaleVal}
+                 onSend={() => {
+                   if (!currentQ) return;
+
+                   if (currentQ.type === "multi" || currentQ.type === "multiselect") {
+                     if (!selected.length) return;
+                     submitAnswer(selected);
+                     return;
+                   }
+
+                   if (currentQ.type === "scale") {
+                     if (scaleVal == null) return;
+                     submitAnswer(String(scaleVal));
+                     return;
+                   }
+
+                   // text | textarea | number
+                   const value = String(text || "").trim();
+                   if (!value) return;
+                   submitAnswer(value);
+                 }}
+                 onChoice={(opt: string) => {
+                   if (!opt) return;
+                   submitAnswer(opt);
+                 }}
+               />
+             )}
+           </div>
+         </div>
+       </div>
+     );
+   }
 
 function ChatBubble({ msg }: { msg: Msg }) {
   const isBot = msg.role === "bot";
   return (
     <div className={clsx("flex gap-3 items-end", !isBot && "flex-row-reverse")}>
-      {isBot && <div className="w-7 h-7 rounded-full overflow-hidden border border-primary/25 shrink-0 mb-5">
-        <ImageWithFallback src={doctorHero} alt="Dr. Nikolas Escobar" className="w-full h-full object-cover object-top" />
-      </div>}
-      <div className="max-w-[72%] md:max-w-[60%]">
-        <div className={clsx("rounded-2xl px-4 py-3 text-sm leading-relaxed whitespace-pre-wrap",
-          isBot ? msg.isWarning ? "bg-amber-950/60 border border-amber-500/35 text-amber-100 rounded-bl-sm"
-            : "bg-card border border-border text-foreground rounded-bl-sm"
-            : "bg-primary/15 border border-primary/25 text-foreground rounded-br-sm")}>
-          {msg.isWarning && <div className="flex items-center gap-1.5 mb-2 pb-2 border-b border-amber-500/20"><AlertTriangle className="w-3.5 h-3.5 text-amber-400 shrink-0" /><span className="text-[10px] text-amber-400 uppercase tracking-widest" style={{ fontFamily: "'DM Mono', monospace" }}>Alerta de riesgo</span></div>}
-          {msg.content.startsWith("— ") ? (<><p className="text-[10px] text-primary/60 uppercase tracking-widest mb-2" style={{ fontFamily: "'DM Mono', monospace" }}>{msg.content.split("\n\n")[0].replace(/^— |—$/g, "")}</p><span>{msg.content.split("\n\n").slice(1).join("\n\n")}</span></>) : msg.content}
+      {isBot && (
+        <div className="w-7 h-7 rounded-full overflow-hidden border border-primary/25 shrink-0 mb-5">
+          <ImageWithFallback
+            src={doctorHero}
+            alt="Dr. Nikolas Escobar"
+            className="w-full h-full object-cover object-top"
+          />
         </div>
-        <p className={clsx("text-[10px] text-muted-foreground/40 mt-1", !isBot && "text-right")} style={{ fontFamily: "'DM Mono', monospace" }}>{formatTs(msg.ts)}</p>
+      )}
+      <div className="max-w-[72%] md:max-w-[60%]">
+        <div
+          className={clsx(
+            "rounded-2xl px-4 py-3 text-sm leading-relaxed whitespace-pre-wrap",
+            isBot
+              ? msg.isWarning
+                ? "bg-amber-950/60 border border-amber-500/35 text-amber-100 rounded-bl-sm"
+                : "bg-card border border-border text-foreground rounded-bl-sm"
+              : "bg-primary/15 border border-primary/25 text-foreground rounded-br-sm"
+          )}
+        >
+          {msg.isWarning && (
+            <div className="flex items-center gap-1.5 mb-2 pb-2 border-b border-amber-500/20">
+              <AlertTriangle className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+              <span
+                className="text-[10px] text-amber-400 uppercase tracking-widest"
+                style={{ fontFamily: "'DM Mono', monospace" }}
+              >
+                Alerta de riesgo
+              </span>
+            </div>
+          )}
+          {msg.content.startsWith("— ") ? (
+            <>
+              <p
+                className="text-[10px] text-primary/60 uppercase tracking-widest mb-2"
+                style={{ fontFamily: "'DM Mono', monospace" }}
+              >
+                {msg.content.split("\n\n")[0].replace(/^— |—$/g, "")}
+              </p>
+              <span>{msg.content.split("\n\n").slice(1).join("\n\n")}</span>
+            </>
+          ) : (
+            msg.content
+          )}
+        </div>
+        <p
+          className={clsx("text-[10px] text-muted-foreground/40 mt-1", !isBot && "text-right")}
+          style={{ fontFamily: "'DM Mono', monospace" }}
+        >
+          {formatTs(msg.ts)}
+        </p>
       </div>
     </div>
   );
 }
+
 function TypingDots() {
   return (
     <div className="flex gap-3 items-end">
@@ -2163,18 +2954,152 @@ function TypingDots() {
         <ImageWithFallback src={doctorPhoto} alt="Dr." className="w-full h-full object-cover object-top" />
       </div>
       <div className="bg-card border border-border rounded-2xl rounded-bl-sm px-4 py-3.5">
-        <div className="flex gap-1.5">{[0,1,2].map(i=><span key={i} className="w-1.5 h-1.5 rounded-full bg-muted-foreground/40 animate-bounce" style={{animationDelay:`${i*0.18}s`}}/>)}</div>
+        <div className="flex gap-1.5">
+          {[0, 1, 2].map((i) => (
+            <span
+              key={i}
+              className="w-1.5 h-1.5 rounded-full bg-muted-foreground/40 animate-bounce"
+              style={{ animationDelay: `${i * 0.18}s` }}
+            />
+          ))}
+        </div>
       </div>
     </div>
   );
 }
-function ChatInput({ q, text, setText, selected, toggleOption, scaleVal, setScaleVal, onSend, onChoice }: any) {
+
+function ChatInput({
+  q,
+  text,
+  setText,
+  selected,
+  toggleOption,
+  scaleVal,
+  setScaleVal,
+  onSend,
+  onChoice,
+}: any) {
+  const isSelect = q?.type === "select" || q?.type === "choice";
+  const isMulti = q?.type === "multi" || q?.type === "multiselect";
+
   return (
-    <div className="border-t border-border bg-card/70 px-4 md:px-8 py-4 shrink-0">
-      {q.type==="choice"&&<div className="flex flex-wrap gap-2">{q.options?.map((o:string)=><button key={o} onClick={()=>onChoice(o)} className="px-3.5 py-2 rounded-xl text-sm border border-border bg-background/60 text-muted-foreground hover:border-primary/40 hover:bg-primary/8 hover:text-foreground transition-all">{o}</button>)}</div>}
-      {q.type==="multiselect"&&<div><div className="flex flex-wrap gap-2 mb-3">{q.options?.map((o:string)=><button key={o} onClick={()=>toggleOption(o)} className={clsx("px-3.5 py-1.5 rounded-xl text-sm border transition-all",selected.includes(o)?"border-primary bg-primary/15 text-primary":"border-border bg-background/60 text-muted-foreground hover:border-primary/30 hover:text-foreground")}>{o}</button>)}</div><button onClick={onSend} disabled={selected.length===0} className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-primary text-primary-foreground text-sm font-medium disabled:opacity-40 hover:bg-primary/90 transition-colors"><Send className="w-3.5 h-3.5"/>Confirmar ({selected.length})</button></div>}
-      {q.type==="scale"&&<div><div className="flex gap-1.5 flex-wrap mb-3">{Array.from({length:10},(_,i)=>i+1).map(n=>{const base=n<=3?"border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/20":n<=6?"border-amber-500/30 text-amber-400 hover:bg-amber-500/20":"border-red-500/30 text-red-400 hover:bg-red-500/20";const active=n<=3?"bg-emerald-500/30 border-emerald-400 text-emerald-300":n<=6?"bg-amber-500/30 border-amber-400 text-amber-300":"bg-red-500/30 border-red-400 text-red-300";return<button key={n} onClick={()=>setScaleVal(n)} className={clsx("w-10 h-10 rounded-xl border text-sm font-medium transition-all",scaleVal===n?active:`bg-background/60 ${base}`)} style={{fontFamily:"'DM Mono',monospace"}}>{n}</button>})}</div>{scaleVal!==null&&<button onClick={onSend} className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 transition-colors"><Send className="w-3.5 h-3.5"/>Confirmar {scaleVal}/10</button>}</div>}
-      {["text","textarea","number"].includes(q.type)&&<div className="flex gap-2.5 items-end">{q.type==="textarea"?<textarea autoFocus value={text} onChange={e=>setText(e.target.value)} placeholder={q.placeholder} onKeyDown={e=>{if(e.key==="Enter"&&e.ctrlKey){e.preventDefault();onSend();}}} rows={3} className="flex-1 bg-background/60 border border-border rounded-xl px-4 py-3 text-sm text-foreground placeholder:text-muted-foreground/40 resize-none focus:outline-none focus:border-primary/50 focus:ring-1 focus:ring-primary/20 transition-all min-h-[80px] max-h-[140px]" style={{fontFamily:"'DM Sans',sans-serif"}}/>:<input autoFocus type={q.type==="number"?"number":"text"} value={text} onChange={e=>setText(e.target.value)} placeholder={q.placeholder} min={q.type==="number"?0:undefined} onKeyDown={e=>{if(e.key==="Enter")onSend();}} className="flex-1 bg-background/60 border border-border rounded-xl px-4 py-3 text-sm text-foreground placeholder:text-muted-foreground/40 focus:outline-none focus:border-primary/50 focus:ring-1 focus:ring-primary/20 transition-all" style={{fontFamily:"'DM Sans',sans-serif"}}/>}<button onClick={onSend} disabled={!text.trim()} className="w-11 h-11 rounded-xl bg-primary text-primary-foreground flex items-center justify-center shrink-0 disabled:opacity-40 hover:bg-primary/90 transition-colors"><Send className="w-4 h-4"/></button></div>}
+    <div className="px-1 pb-2">
+      {/* SELECT — un clic guarda y avanza */}
+      {isSelect && Array.isArray(q.options) && (
+        <div className="flex flex-wrap gap-2 max-h-52 overflow-y-auto">
+          {q.options.map((o: string) => (
+            <button
+              key={o}
+              type="button"
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                if (typeof onChoice === "function") {
+                  onChoice(o);
+                } else {
+                  console.error("onChoice no está definido");
+                }
+              }}
+              className="px-3.5 py-2.5 rounded-xl text-sm border border-border bg-background/70 text-foreground hover:border-primary hover:bg-primary/15 transition-colors"
+            >
+              {o}
+            </button>
+          ))}
+        </div>
+      )}
+
+      {/* MULTI */}
+      {isMulti && Array.isArray(q.options) && (
+        <div>
+          <div className="flex flex-wrap gap-2 mb-3 max-h-40 overflow-y-auto">
+            {q.options.map((o: string) => (
+              <button
+                key={o}
+                type="button"
+                onClick={() => toggleOption(o)}
+                className={
+                  "px-3.5 py-2 rounded-xl text-sm border transition-colors " +
+                  (selected?.includes(o)
+                    ? "border-primary bg-primary/15 text-primary"
+                    : "border-border bg-background/70")
+                }
+              >
+                {o}
+              </button>
+            ))}
+          </div>
+          <button
+            type="button"
+            onClick={onSend}
+            disabled={!selected || selected.length === 0}
+            className="px-4 py-2.5 rounded-xl bg-primary text-primary-foreground text-sm font-medium disabled:opacity-40"
+          >
+            Confirmar ({selected?.length || 0})
+          </button>
+        </div>
+      )}
+
+      {/* SCALE — un clic guarda */}
+      {q?.type === "scale" && (
+        <div className="flex flex-wrap gap-1.5">
+          {Array.from({ length: 10 }, (_, i) => i + 1).map((n) => (
+            <button
+              key={n}
+              type="button"
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                setScaleVal?.(n);
+                if (typeof onChoice === "function") onChoice(String(n));
+              }}
+              className={
+                "w-10 h-10 rounded-xl border text-sm font-medium " +
+                (scaleVal === n
+                  ? "border-primary bg-primary/20 text-primary"
+                  : "border-border hover:border-primary/50")
+              }
+            >
+              {n}
+            </button>
+          ))}
+        </div>
+      )}
+
+      {/* TEXT */}
+      {["text", "textarea", "number"].includes(q?.type) && (
+        <div className="flex gap-2 items-end">
+          {q.type === "textarea" ? (
+            <textarea
+              autoFocus
+              value={text}
+              onChange={(e) => setText(e.target.value)}
+              placeholder={q.placeholder || "Escribe…"}
+              rows={2}
+              className="flex-1 bg-background/60 border border-border rounded-xl px-4 py-3 text-sm"
+            />
+          ) : (
+            <input
+              autoFocus
+              type={q.type === "number" ? "number" : "text"}
+              value={text}
+              onChange={(e) => setText(e.target.value)}
+              placeholder={q.placeholder || "Escribe…"}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") onSend?.();
+              }}
+              className="flex-1 bg-background/60 border border-border rounded-xl px-4 py-3 text-sm"
+            />
+          )}
+          <button
+            type="button"
+            onClick={onSend}
+            disabled={!text?.trim()}
+            className="w-11 h-11 rounded-xl bg-primary text-primary-foreground flex items-center justify-center disabled:opacity-40"
+          >
+            <Send className="w-4 h-4" />
+          </button>
+        </div>
+      )}
     </div>
   );
 }
@@ -2185,155 +3110,306 @@ function ChatInput({ q, text, setText, selected, toggleOption, scaleVal, setScal
 
 function DiagnosisPage() {
   const navigate = useNavigate();
-  const [diagnosis, setDiagnosis] = useState<any>(null);
-  const [loading, setLoading] = useState(true); const [error, setError] = useState("");
-  const [apiKey, setApiKey] = useState(import.meta.env.VITE_GEMINI_API_KEY || ""); const [keyInput, setKeyInput] = useState("");
-  const [backendAvailable, setBackendAvailable] = useState(true);
-  const answers: Record<string, string> = JSON.parse(localStorage.getItem("ch_answers") || "{}");
-  const hasAnswers = Object.keys(answers).length > 0;
-  const riskColors: Record<string, string> = { BAJO: "text-emerald-400 bg-emerald-500/10 border-emerald-500/25", MEDIO: "text-amber-400 bg-amber-500/10 border-amber-500/25", ALTO: "text-orange-400 bg-orange-500/10 border-orange-500/25", CRÍTICO: "text-red-400 bg-red-500/10 border-red-500/25" };
-  const prioColors: Record<string, string> = { URGENTE: "text-red-400 bg-red-500/10", PRIORITARIO: "text-amber-400 bg-amber-500/10", RECOMENDADO: "text-teal-400 bg-teal-500/10" };
 
-  async function runDiagnosis(key: string) {
-    setLoading(true); setError("");
+  const [diagnosis, setDiagnosis] = useState<any>(() => {
     try {
-      const result = await callGemini(answers, key);
-      setDiagnosis(result);
-      if (key) setApiKey(key);
-    } catch (e: any) {
-      const msg: string = e.message || "";
-      if (msg.includes("VITE_GEMINI_API_KEY") || msg.includes("API key")) {
-        setBackendAvailable(false);
-        setLoading(false);
-        return;
+      return JSON.parse(localStorage.getItem("ch_diagnosis") || "null");
+    } catch {
+      return null;
+    }
+  });
+
+  const [answers] = useState<Record<string, string>>(() => {
+    try {
+      return JSON.parse(localStorage.getItem("ch_answers") || "{}");
+    } catch {
+      return {};
+    }
+  });
+
+  const hasAnswers = Object.keys(answers).length > 0;
+  const [loading, setLoading] = useState(!diagnosis && hasAnswers);
+  const [error, setError] = useState("");
+
+  const riskColors: Record<string, string> = {
+    BAJO: "text-emerald-400 bg-emerald-500/10 border-emerald-500/25",
+    MEDIO: "text-amber-400 bg-amber-500/10 border-amber-500/25",
+    ALTO: "text-orange-400 bg-orange-500/10 border-orange-500/25",
+    CRÍTICO: "text-red-400 bg-red-500/10 border-red-500/25",
+    CRITICO: "text-red-400 bg-red-500/10 border-red-500/25",
+  };
+
+  const PROGRAMAS: Record<
+    string,
+    { nombre: string; precio: string; desc: string; incluye: string[] }
+  > = {
+    mes1: {
+      nombre: "Programa Mes 1 — Intensivo",
+      precio: "$350.000 COP",
+      desc: "Inducción, estabilización y seguimiento cercano.",
+      incluye: ["Evaluación médica", "Audios de inducción", "Video de bienvenida", "Seguimiento"],
+    },
+    mes2: {
+      nombre: "Programa Mes 2 — Profundización",
+      precio: "$650.000 COP",
+      desc: "Hábitos, craving y red de apoyo.",
+      incluye: ["Todo lo del mes 1", "Más sesiones", "Biblioteca ampliada"],
+    },
+    mes3: {
+      nombre: "Programa Mes 3 — Consolidación",
+      precio: "$900.000 COP",
+      desc: "Consolidar avances y prevenir recaídas.",
+      incluye: ["Plan de 3 meses", "Reuniones grupales", "Contenido premium"],
+    },
+    mes4: {
+      nombre: "Programa Mes 4 — Cierre y bienestar",
+      precio: "$1.100.000 COP",
+      desc: "Cierre terapéutico y mantenimiento.",
+      incluye: ["Programa completo", "Todos los audios/videos", "Acompañamiento prioritario"],
+    },
+  };
+
+  async function runDiagnosis() {
+    if (!hasAnswers) {
+      setError("No hay respuestas de historia clínica.");
+      setLoading(false);
+      return;
+    }
+    setLoading(true);
+    setError("");
+    try {
+      const result = await callGemini(answers, import.meta.env.VITE_GEMINI_API_KEY || "");
+      if (!result || typeof result !== "object") {
+        throw new Error("Respuesta de IA inválida");
       }
-      setError(msg || "Error al generar diagnóstico. Verifique la API key o el backend.");
+      setDiagnosis(result);
+      localStorage.setItem("ch_diagnosis", JSON.stringify(result));
+    } catch (e: any) {
+      setError(e?.message || "No se pudo generar el diagnóstico.");
     } finally {
       setLoading(false);
     }
   }
-  // Al cargar: intentar siempre (callGemini prueba backend primero, luego directo con key)
-  useEffect(() => { if (hasAnswers) runDiagnosis(apiKey); else setLoading(false); }, []);
 
-  if (!hasAnswers) return <div className="flex items-center justify-center min-h-screen bg-background" style={{ fontFamily: "'Plus Jakarta Sans', 'DM Sans', sans-serif" }}><div className="text-center max-w-sm"><ClipboardList className="w-12 h-12 text-muted-foreground/30 mx-auto mb-4"/><h2 className="font-medium mb-2">Sin historia clínica</h2><p className="text-sm text-muted-foreground mb-6">Complete primero la evaluación clínica.</p><button onClick={()=>navigate("/historia")} className="px-5 py-2.5 rounded-xl bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 transition-colors">Ir a evaluación</button></div></div>;
-  if (!backendAvailable && !apiKey && !loading) return (
-    <div className="min-h-screen bg-background flex items-center justify-center px-4" style={{ fontFamily: "'Plus Jakarta Sans', 'DM Sans', sans-serif" }}>
-      <div className="w-full max-w-sm bg-card border border-border rounded-2xl p-7">
-        <div className="w-10 h-10 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center mb-4"><Sparkles className="w-5 h-5 text-primary"/></div>
-        <h2 className="font-semibold mb-1">API Key de Gemini (Gratis)</h2>
-        <p className="text-sm text-muted-foreground mb-1">Ingrese su API key de Google Gemini para generar el diagnóstico con IA.</p>
-        <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noreferrer" className="text-xs text-primary hover:underline block mb-4 flex items-center gap-1">
-          → Obtener API key gratuita en Google AI Studio <ExternalLink className="w-3 h-3" />
-        </a>
-        <input value={keyInput} onChange={e=>setKeyInput(e.target.value)} placeholder="AIza..." className="w-full bg-muted border border-border rounded-xl px-4 py-3 text-sm mb-3 focus:outline-none focus:border-primary/50 transition-all placeholder:text-muted-foreground/40"/>
-        {error&&<p className="text-xs text-destructive mb-3">{error}</p>}
-        <button onClick={()=>{if(keyInput.trim())runDiagnosis(keyInput.trim());}} disabled={!keyInput.trim()} className="w-full py-3 rounded-xl bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 transition-colors disabled:opacity-40">Generar diagnóstico</button>
-        <div className="mt-4 pt-4 border-t border-border">
-          <p className="text-[10px] text-muted-foreground/50 leading-relaxed" style={{ fontFamily: "'DM Mono', monospace" }}>
-            Para evitar ingresar la key cada vez: crea un archivo .env en la raíz del proyecto y agrega VITE_GEMINI_API_KEY=tu_clave
+  useEffect(() => {
+    if (!hasAnswers) {
+      setLoading(false);
+      return;
+    }
+    if (!diagnosis) {
+      runDiagnosis();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // ——— Sin historia ———
+  if (!hasAnswers) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center px-4">
+        <div className="text-center max-w-sm space-y-3">
+          <AlertTriangle className="w-10 h-10 text-amber-400 mx-auto" />
+          <h2 className="font-medium">No hay historia clínica</h2>
+          <p className="text-sm text-muted-foreground">
+            Complete primero la evaluación para generar la orientación con IA.
           </p>
+          <button
+            onClick={() => navigate("/historia")}
+            className="px-5 py-2.5 rounded-xl text-sm font-semibold"
+            style={{ background: "linear-gradient(135deg, #0ccec6, #07a8a2)", color: "#031014" }}
+          >
+            Ir a historia clínica
+          </button>
         </div>
       </div>
-    </div>
-  );
-  if (loading) return <div className="min-h-screen bg-background flex items-center justify-center" style={{ fontFamily: "'Plus Jakarta Sans', 'DM Sans', sans-serif" }}><div className="text-center"><div className="w-16 h-16 rounded-2xl bg-primary/10 border border-primary/20 flex items-center justify-center mx-auto mb-5"><Loader2 className="w-7 h-7 text-primary animate-spin"/></div><h2 className="font-medium mb-2">Analizando historia clínica</h2><p className="text-sm text-muted-foreground">Gemini AI · Evaluación psiquiátrica + toxicológica...</p></div></div>;
-  if (error) return <div className="min-h-screen bg-background flex items-center justify-center px-4" style={{ fontFamily: "'Plus Jakarta Sans', 'DM Sans', sans-serif" }}><div className="text-center max-w-sm"><AlertTriangle className="w-12 h-12 text-amber-400 mx-auto mb-4"/><h2 className="font-medium mb-2">Error</h2><p className="text-sm text-muted-foreground mb-6">{error}</p><button onClick={()=>{setApiKey("");setError("");setLoading(false);}} className="px-5 py-2.5 rounded-xl bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 transition-colors">Reintentar</button></div></div>;
+    );
+  }
 
-  const riskClass = riskColors[diagnosis?.nivel_riesgo] || riskColors["MEDIO"];
-  const recommendedProgram = PROGRAMS.find(p => p.id === diagnosis?.programa_recomendado) || PROGRAMS[0];
+  // ——— Cargando ———
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-center">
+          <Loader2 className="w-8 h-8 text-primary animate-spin mx-auto mb-4" />
+          <h2 className="font-medium mb-1">Analizando historia clínica</h2>
+          <p className="text-sm text-muted-foreground">Gemini AI · Evaluación en curso...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // ——— Error ———
+  if (error) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center px-4">
+        <div className="text-center max-w-sm">
+          <AlertTriangle className="w-10 h-10 text-amber-400 mx-auto mb-3" />
+          <h2 className="font-medium mb-2">Error</h2>
+          <p className="text-sm text-muted-foreground mb-4">{error}</p>
+          <div className="flex flex-col gap-2">
+            <button
+              onClick={runDiagnosis}
+              className="px-5 py-2.5 rounded-xl bg-primary text-primary-foreground text-sm"
+            >
+              Reintentar
+            </button>
+            <button
+              onClick={() => navigate("/historia")}
+              className="text-sm text-muted-foreground underline"
+            >
+              Volver a la historia
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // ——— Sin diagnóstico (fallback) ———
+  if (!diagnosis) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center px-4">
+        <div className="text-center max-w-sm space-y-3">
+          <p className="text-sm text-muted-foreground">No hay diagnóstico para mostrar.</p>
+          <button
+            onClick={runDiagnosis}
+            className="px-5 py-2.5 rounded-xl bg-primary text-primary-foreground text-sm"
+          >
+            Generar diagnóstico
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  const riskKey = String(diagnosis?.nivel_riesgo || "MEDIO").toUpperCase();
+  const riskClass = riskColors[riskKey] || riskColors.MEDIO;
+  const progKey = String(diagnosis?.programa_recomendado || "mes1").toLowerCase();
+  const prog = PROGRAMAS[progKey] || PROGRAMAS.mes1;
 
   return (
-    <div className="min-h-screen bg-background" style={{ fontFamily: "'Plus Jakarta Sans', 'DM Sans', sans-serif" }}>
+    <div className="min-h-screen bg-background pb-16">
       <div className="max-w-3xl mx-auto px-4 py-8 space-y-5">
-        <div className="flex items-start justify-between gap-4">
+        <div className="flex items-start justify-between gap-3">
           <div>
-            <p className="text-[10px] text-primary uppercase tracking-widest mb-1" style={{ fontFamily: "'DM Mono', monospace" }}>Diagnóstico IA · Gemini · Consultorio Holístico</p>
-            <h1 className="text-xl font-semibold">Resultado de Evaluación</h1>
-            <p className="text-sm text-muted-foreground mt-1">Paciente: {answers.nombre} · {answers.edad} años</p>
+            <h1 className="text-xl font-bold">Orientación diagnóstica</h1>
+            <p className="text-sm text-muted-foreground">
+              Apoyo clínico con IA · validación médica pendiente
+            </p>
           </div>
-          <button onClick={()=>window.print()} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-border text-xs text-muted-foreground hover:text-foreground transition-colors shrink-0"><Printer className="w-3.5 h-3.5"/>Imprimir</button>
+          <button
+            onClick={() => window.print()}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-border text-xs"
+          >
+            <Printer className="w-3.5 h-3.5" /> Imprimir
+          </button>
         </div>
-        {diagnosis?.nivel_riesgo==="CRÍTICO"&&<div className="flex items-start gap-3 bg-red-950/40 border border-red-500/30 rounded-xl p-4"><AlertTriangle className="w-5 h-5 text-red-400 shrink-0 mt-0.5"/><div><p className="text-sm font-medium text-red-300 mb-1">Riesgo Crítico — Atención inmediata</p><p className="text-xs text-red-300/70">Línea de la Vida: 800-911-2000 · Emergencias: 911</p></div></div>}
-        <div className="bg-card border border-border rounded-2xl p-5">
-          <div className="flex items-center gap-3 mb-3"><h2 className="text-sm font-medium">Resumen Clínico</h2><span className={clsx("text-[10px] font-medium px-2.5 py-1 rounded-full border",riskClass)} style={{fontFamily:"'DM Mono',monospace"}}>Riesgo {diagnosis?.nivel_riesgo}</span></div>
-          <p className="text-sm text-muted-foreground leading-relaxed">{diagnosis?.resumen}</p>
-          {diagnosis?.toxicologia&&<div className="mt-3 pt-3 border-t border-border"><p className="text-[10px] text-primary/70 uppercase tracking-widest mb-1" style={{fontFamily:"'DM Mono',monospace"}}>Evaluación Toxicológica</p><p className="text-xs text-muted-foreground">{diagnosis.toxicologia}</p></div>}
-          {diagnosis?.nivel_riesgo_justificacion&&<p className="text-xs text-muted-foreground/70 mt-3 pt-3 border-t border-border">{diagnosis.nivel_riesgo_justificacion}</p>}
-        </div>
-        {diagnosis?.diagnosticos?.length>0&&<div className="bg-card border border-border rounded-2xl overflow-hidden"><div className="px-5 py-3 border-b border-border"><p className="text-xs font-medium uppercase tracking-wider" style={{fontFamily:"'DM Mono',monospace"}}>Diagnósticos (DSM-5 / CIE-10)</p></div><div className="p-5 space-y-3">{diagnosis.diagnosticos.map((d:any,i:number)=><div key={i} className="flex gap-3"><span className="text-[10px] font-medium text-primary bg-primary/10 rounded-md px-2 py-1 h-fit mt-0.5 shrink-0" style={{fontFamily:"'DM Mono',monospace"}}>{d.codigo}</span><div><p className="text-sm font-medium">{d.nombre}</p><p className="text-xs text-muted-foreground mt-0.5">{d.descripcion}</p></div></div>)}</div></div>}
-        {diagnosis?.especialistas?.length>0&&<div className="bg-card border border-border rounded-2xl overflow-hidden"><div className="px-5 py-3 border-b border-border"><p className="text-xs font-medium uppercase tracking-wider" style={{fontFamily:"'DM Mono',monospace"}}>Especialistas Recomendados</p></div><div className="p-5 space-y-3">{diagnosis.especialistas.map((s:any,i:number)=><div key={i} className="flex items-start gap-3"><span className={clsx("text-[10px] font-medium px-2 py-1 rounded-md shrink-0 mt-0.5",prioColors[s.prioridad]||prioColors["RECOMENDADO"])} style={{fontFamily:"'DM Mono',monospace"}}>{s.prioridad}</span><div><p className="text-sm font-medium">{s.especialidad}</p><p className="text-xs text-muted-foreground">{s.razon}</p></div></div>)}</div></div>}
-        {diagnosis?.recomendaciones_inmediatas?.length>0&&<div className="bg-card border border-border rounded-2xl p-5"><p className="text-xs font-medium uppercase tracking-wider mb-3" style={{fontFamily:"'DM Mono',monospace"}}>Recomendaciones Inmediatas</p><ul className="space-y-2">{diagnosis.recomendaciones_inmediatas.map((r:string,i:number)=><li key={i} className="flex items-start gap-2 text-sm text-muted-foreground"><Check className="w-4 h-4 text-primary shrink-0 mt-0.5"/>{r}</li>)}</ul></div>}
-        {diagnosis?.plan_tratamiento&&<div className="bg-card border border-border rounded-2xl overflow-hidden"><div className="px-5 py-3 border-b border-border"><p className="text-xs font-medium uppercase tracking-wider" style={{fontFamily:"'DM Mono',monospace"}}>Plan de Tratamiento Holístico</p></div><div className="p-5 grid md:grid-cols-3 gap-4">{[{label:"Primera línea",value:diagnosis.plan_tratamiento.primera_linea},{label:"Complementario",value:diagnosis.plan_tratamiento.segunda_linea},{label:"Seguimiento",value:diagnosis.plan_tratamiento.seguimiento}].map(item=><div key={item.label}><p className="text-[10px] text-primary/70 uppercase tracking-widest mb-1" style={{fontFamily:"'DM Mono',monospace"}}>{item.label}</p><p className="text-xs text-muted-foreground leading-relaxed">{item.value}</p></div>)}</div></div>}
-        {/* Comorbilidades */}
-        {diagnosis?.comorbilidades?.length>0&&<div className="bg-card border border-border rounded-2xl overflow-hidden"><div className="px-5 py-3 border-b border-border flex items-center gap-2"><AlertTriangle className="w-3.5 h-3.5 text-amber-400"/><p className="text-xs font-medium uppercase tracking-wider" style={{fontFamily:"'DM Mono',monospace"}}>Comorbilidades Identificadas</p></div><div className="p-5 flex flex-wrap gap-2">{diagnosis.comorbilidades.map((c:string,i:number)=><span key={i} className="text-xs bg-amber-500/10 text-amber-400 border border-amber-500/20 px-3 py-1.5 rounded-full">{c}</span>)}</div></div>}
 
-        {/* Mensaje motivacional del médico */}
-        {diagnosis?.mensaje_al_paciente&&<div className="bg-gradient-to-br from-primary/10 to-teal-500/5 border border-primary/20 rounded-2xl p-5">
-          <div className="flex items-center gap-2 mb-3"><img src={clinicLogo} alt="Logo" className="w-8 h-8 rounded-full object-cover" /><div><p className="text-xs font-medium">Dr. Nikolas Escobar · Consultorio Holístico</p><p className="text-[10px] text-muted-foreground">Mensaje clínico personalizado</p></div></div>
-          <p className="text-sm text-foreground/80 leading-relaxed italic">"{diagnosis.mensaje_al_paciente}"</p>
-        </div>}
-
-        {/* Package Recommendation — sales section */}
-        {(()=>{
-          const prog1 = PROGRAMS.find(p=>p.id==="mes1");
-          const prog2 = PROGRAMS.find(p=>p.id==="mes2");
-          const recommended = PROGRAMS.find(p=>p.id===diagnosis?.programa_recomendado) || prog1!;
-          const isHighRisk = ["ALTO","CRÍTICO"].includes(diagnosis?.nivel_riesgo);
-          return (
-            <div className="rounded-2xl overflow-hidden border-2 border-primary shadow-lg shadow-primary/10">
-              <div className="bg-primary px-5 py-3 flex items-center justify-between">
-                <div className="flex items-center gap-2"><Sparkles className="w-4 h-4 text-primary-foreground/80"/><p className="text-xs font-semibold text-primary-foreground uppercase tracking-wider" style={{fontFamily:"'DM Mono',monospace"}}>Plan Terapéutico Recomendado por IA</p></div>
-                <span className="text-[10px] bg-white/20 text-primary-foreground px-2.5 py-1 rounded-full font-medium">Para {answers.nombre?.split(" ")[0]}</span>
-              </div>
-              <div className="bg-card p-5 space-y-4">
-                {diagnosis?.programa_justificacion&&<div className="bg-primary/5 border border-primary/15 rounded-xl p-4"><p className="text-[10px] text-primary uppercase tracking-widest mb-1.5" style={{fontFamily:"'DM Mono',monospace"}}>Justificación Clínica</p><p className="text-sm text-foreground/80 leading-relaxed">{diagnosis.programa_justificacion}</p></div>}
-                <div className={clsx("grid gap-3",isHighRisk?"grid-cols-1":"md:grid-cols-2")}>
-                  {[prog1,prog2].filter(Boolean).map(prog=>{
-                    const isRec = prog!.id===recommended.id;
-                    return(
-                      <div key={prog!.id} className={clsx("relative rounded-xl border-2 p-4 transition-all",isRec?"border-primary bg-primary/5":"border-border bg-muted/30")}>
-                        {isRec&&<span className="absolute -top-2.5 left-4 text-[10px] bg-primary text-primary-foreground px-2.5 py-0.5 rounded-full font-semibold" style={{fontFamily:"'DM Mono',monospace"}}>★ RECOMENDADO</span>}
-                        <div className="flex items-start justify-between mb-2">
-                          <div><p className="text-xs font-semibold text-primary uppercase tracking-wide" style={{fontFamily:"'DM Mono',monospace"}}>{prog!.id==="mes1"?"Mes 1 · Inicio":"Mes 2 · Profundización"}</p><h3 className="font-semibold text-base mt-0.5">{prog!.tag}</h3></div>
-                          <div className="text-right shrink-0 ml-3"><p className="text-lg font-bold text-primary">{formatCOP(prog!.price)}</p><p className="text-[10px] text-muted-foreground">{prog!.duration}</p></div>
-                        </div>
-                        <p className="text-xs text-muted-foreground mb-3 leading-relaxed">{prog!.description}</p>
-                        <div className="flex flex-wrap gap-1.5 mb-3">
-                          {prog!.sessions.slice(0,4).map((s:string,i:number)=><span key={i} className="text-[10px] bg-background text-muted-foreground border border-border px-2 py-0.5 rounded-md">{s}</span>)}
-                          {prog!.sessions.length>4&&<span className="text-[10px] text-primary/60">+{prog!.sessions.length-4} más</span>}
-                        </div>
-                        <div className="flex gap-2 mb-4">
-                          <span className="flex items-center gap-1 text-[10px] bg-purple-500/10 text-purple-400 border border-purple-500/20 px-2 py-1 rounded-full"><Headphones className="w-2.5 h-2.5"/>{prog!.includedAudioIds.length} audios</span>
-                          <span className="flex items-center gap-1 text-[10px] bg-blue-500/10 text-blue-400 border border-blue-500/20 px-2 py-1 rounded-full"><Video className="w-2.5 h-2.5"/>{prog!.includedVideoIds.length} videos</span>
-                        </div>
-                        <button onClick={()=>navigate("/tratamientos")} className={clsx("w-full py-2.5 rounded-xl text-sm font-medium transition-all flex items-center justify-center gap-2",isRec?"bg-primary text-primary-foreground hover:bg-primary/90":"bg-background border border-border text-foreground hover:border-primary/50")}>
-                          {isRec?"Adquirir este plan":"Ver detalles"} <ArrowRight className="w-3.5 h-3.5"/>
-                        </button>
-                      </div>
-                    );
-                  })}
-                </div>
-                <button onClick={()=>navigate("/tratamientos")} className="w-full py-3.5 rounded-xl bg-primary text-primary-foreground font-semibold text-sm hover:bg-primary/90 transition-all flex items-center justify-center gap-2 shadow-md shadow-primary/20">
-                  <ShoppingCart className="w-4 h-4"/>Ir a paquetes y comprar ahora
-                </button>
-                <p className="text-[10px] text-muted-foreground/50 text-center">Pago seguro · Cancelación flexible · Atención médica garantizada</p>
-              </div>
+        {(riskKey === "CRÍTICO" || riskKey === "CRITICO") && (
+          <div className="flex items-start gap-3 bg-red-950/40 border border-red-500/30 rounded-xl p-4">
+            <AlertTriangle className="w-5 h-5 text-red-400 shrink-0 mt-0.5" />
+            <div>
+              <p className="text-sm font-medium text-red-300 mb-1">Riesgo crítico</p>
+              <p className="text-xs text-red-300/70">
+                Línea de la Vida: 800-911-2000 · Emergencias: 123
+              </p>
             </div>
-          );
-        })()}
+          </div>
+        )}
 
-        {/* Servicios adicionales recomendados */}
-        {diagnosis?.servicios_adicionales_recomendados?.length>0&&<div className="bg-card border border-border rounded-2xl overflow-hidden"><div className="px-5 py-3 border-b border-border flex items-center gap-2"><Star className="w-3.5 h-3.5 text-amber-400"/><p className="text-xs font-medium uppercase tracking-wider" style={{fontFamily:"'DM Mono',monospace"}}>Servicios Adicionales Recomendados</p></div><div className="p-5 grid sm:grid-cols-2 gap-3">{diagnosis.servicios_adicionales_recomendados.map((s:any,i:number)=><div key={i} className="bg-muted/40 border border-border rounded-xl p-3.5"><p className="text-sm font-medium mb-1">{typeof s==="string"?s:s.servicio||s.nombre}</p>{s.razon&&<p className="text-xs text-muted-foreground">{s.razon}</p>}</div>)}</div></div>}
+        <div className="bg-card border border-border rounded-2xl p-5">
+          <div className="flex items-center gap-3 mb-3 flex-wrap">
+            <h2 className="text-sm font-medium">Resumen clínico</h2>
+            <span className={clsx("text-[10px] px-2.5 py-1 rounded-full border", riskClass)}>
+              Riesgo {diagnosis?.nivel_riesgo || "MEDIO"}
+            </span>
+          </div>
+          <p className="text-sm leading-relaxed">{diagnosis?.resumen || "Sin resumen"}</p>
+        </div>
 
-        <p className="text-[10px] text-muted-foreground/30 text-center pb-4" style={{fontFamily:"'DM Mono',monospace"}}>Diagnóstico generado por IA · Requiere validación médica · Documento confidencial</p>
+        {diagnosis?.mensaje_al_paciente && (
+          <div className="bg-card border border-border rounded-2xl p-5">
+            <h2 className="text-sm font-medium mb-2">Mensaje para usted</h2>
+            <p className="text-sm text-muted-foreground">{diagnosis.mensaje_al_paciente}</p>
+          </div>
+        )}
+
+        {Array.isArray(diagnosis?.recomendaciones_inmediatas) &&
+          diagnosis.recomendaciones_inmediatas.length > 0 && (
+            <div className="bg-card border border-border rounded-2xl p-5">
+              <h2 className="text-sm font-medium mb-3">Recomendaciones inmediatas</h2>
+              <ul className="space-y-2">
+                {diagnosis.recomendaciones_inmediatas.map((r: string, i: number) => (
+                  <li key={i} className="text-sm text-muted-foreground flex gap-2">
+                    <Check className="w-4 h-4 text-primary shrink-0 mt-0.5" />
+                    {r}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+
+        {/* Paquete recomendado — venta */}
+        <div className="rounded-2xl border border-primary/30 bg-primary/5 p-5 space-y-3">
+          <p className="text-xs font-semibold uppercase tracking-wide text-primary">
+            Recomendado para usted
+          </p>
+          <div className="flex flex-wrap items-start justify-between gap-2">
+            <div>
+              <h3 className="text-lg font-bold">{prog.nombre}</h3>
+              <p className="text-sm text-muted-foreground mt-1">{prog.desc}</p>
+            </div>
+            <p className="text-lg font-bold text-primary shrink-0">{prog.precio}</p>
+          </div>
+          <ul className="grid sm:grid-cols-2 gap-2">
+            {prog.incluye.map((item) => (
+              <li key={item} className="text-xs text-muted-foreground flex gap-2">
+                <Check className="w-3.5 h-3.5 text-primary shrink-0" />
+                {item}
+              </li>
+            ))}
+          </ul>
+          <p className="text-xs text-muted-foreground">
+            La orientación con IA es un punto de partida. El tratamiento lo acompañan psicólogos,
+            médicos y psiquiatras de la clínica.
+          </p>
+          <button
+            onClick={() => navigate("/tratamientos")}
+            className="w-full sm:w-auto px-6 py-3.5 rounded-xl text-sm font-semibold shadow-lg shadow-primary/20"
+            style={{ background: "linear-gradient(135deg, #0ccec6, #07a8a2)", color: "#031014" }}
+          >
+            Ver paquetes y activar plan
+          </button>
+        </div>
+
+        {/* Acciones secundarias */}
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          <button
+            onClick={() => navigate("/acompanamiento")}
+            className="px-4 py-3 rounded-xl border border-border bg-card text-sm font-medium hover:border-primary/40 transition-colors"
+          >
+            Hablar / desahogarme
+          </button>
+          <button
+            onClick={() => navigate("/mi-historial")}
+            className="px-4 py-3 rounded-xl border border-border bg-card text-sm font-medium hover:border-primary/40 transition-colors"
+          >
+            Mi historial
+          </button>
+          <button
+            onClick={() => {
+              localStorage.removeItem("ch_diagnosis");
+              setDiagnosis(null);
+              runDiagnosis();
+            }}
+            className="px-4 py-3 rounded-xl border border-border bg-card text-sm font-medium text-muted-foreground hover:bg-muted/30 transition-colors"
+          >
+            Regenerar análisis
+          </button>
+        </div>
       </div>
     </div>
   );
 }
-
-// ═══════════════════════════════════════════════════════
-// PAGE 5 — PROGRAMAS Y PAGO (con lista de media)
-// ═══════════════════════════════════════════════════════
 
 function TreatmentsPage() {
   const { user } = useAuth();
@@ -2666,117 +3742,245 @@ function PaymentModal({ program, userName, onClose, t }: { program: typeof PROGR
 
 function AudioPage() {
   const { t } = useLang();
+  const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState<"audios" | "videos">("audios");
   const [activeCat, setActiveCat] = useState<"all" | "autohipnosis" | "binaural" | "podcasts">("all");
   const [playing, setPlaying] = useState<number | null>(null);
   const [watchingVideo, setWatchingVideo] = useState<VideoItem | null>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
-  const filtered = activeCat === "all" ? AUDIOS : AUDIOS.filter(a => a.cat === activeCat);
+
+  const planActivo = getPlanActivo(); // null | "mes1" | "mes2" | "mes3" | "mes4"
+  const filtered = activeCat === "all" ? AUDIOS : AUDIOS.filter((a) => a.cat === activeCat);
 
   function handlePlay(audio: AudioItem) {
-    if (!audio.free) return;
+    if (!puedeReproducir(audio, planActivo)) {
+      navigate("/tratamientos");
+      return;
+    }
     if (playing === audio.id) {
       audioRef.current?.pause();
       setPlaying(null);
       return;
     }
-    // Parar audio anterior
-    if (audioRef.current) { audioRef.current.pause(); audioRef.current.src = ""; }
+    if (audioRef.current) {
+      audioRef.current.pause();
+      audioRef.current.src = "";
+    }
     if (audio.audioSrc) {
       const el = new Audio(audio.audioSrc);
       el.play().catch(() => {});
       el.onended = () => setPlaying(null);
       audioRef.current = el;
+      setPlaying(audio.id);
+    } else {
+      // Sin archivo: solo demo visual
+      setPlaying(audio.id);
     }
-    setPlaying(audio.id);
   }
 
-  useEffect(() => { return () => { audioRef.current?.pause(); }; }, []);
+  useEffect(() => {
+    return () => {
+      audioRef.current?.pause();
+    };
+  }, []);
 
   return (
     <div className="min-h-screen bg-background" style={{ fontFamily: "'Plus Jakarta Sans', 'DM Sans', sans-serif" }}>
       <div className="max-w-5xl mx-auto px-4 py-8">
         <div className="mb-6">
-          <p className="text-[10px] text-primary uppercase tracking-widest mb-1" style={{ fontFamily: "'DM Mono', monospace" }}>Audioterapia Holística</p>
-          <h1 className="text-2xl font-semibold">{t("audioLib")} & {t("videoLib")}</h1>
+          <p className="text-[10px] text-primary uppercase tracking-widest mb-1" style={{ fontFamily: "'DM Mono', monospace" }}>
+            Audioterapia Holística
+          </p>
+          <h1 className="text-2xl font-semibold">
+            {t("audioLib")} & {t("videoLib")}
+          </h1>
           <p className="text-muted-foreground text-sm mt-2">{t("audioSub")}</p>
+          <p className="text-xs text-muted-foreground mt-2">
+            Plan activo:{" "}
+            <strong className="text-foreground">
+              {planActivo ? planActivo.toUpperCase() : "Ninguno (solo contenido gratis)"}
+            </strong>
+            {!planActivo && (
+              <button
+                onClick={() => navigate("/tratamientos")}
+                className="ml-2 text-primary underline font-medium"
+              >
+                Ver paquetes
+              </button>
+            )}
+          </p>
         </div>
 
-        {/* Tabs Audios / Videos */}
+        {/* Tabs */}
         <div className="flex bg-muted rounded-xl p-1 mb-6 w-fit">
-          <button onClick={() => setActiveTab("audios")} className={clsx("flex items-center gap-2 px-5 py-2 rounded-lg text-sm font-medium transition-all", activeTab === "audios" ? "bg-card text-foreground shadow-sm" : "text-muted-foreground")}>
-            <Headphones className="w-4 h-4" />{t("audioLib")}
+          <button
+            onClick={() => setActiveTab("audios")}
+            className={clsx(
+              "flex items-center gap-2 px-5 py-2 rounded-lg text-sm font-medium transition-all",
+              activeTab === "audios" ? "bg-card text-foreground shadow-sm" : "text-muted-foreground"
+            )}
+          >
+            <Headphones className="w-4 h-4" />
+            {t("audioLib")}
           </button>
-          <button onClick={() => setActiveTab("videos")} className={clsx("flex items-center gap-2 px-5 py-2 rounded-lg text-sm font-medium transition-all", activeTab === "videos" ? "bg-card text-foreground shadow-sm" : "text-muted-foreground")}>
-            <Video className="w-4 h-4" />{t("videoLib")}
+          <button
+            onClick={() => setActiveTab("videos")}
+            className={clsx(
+              "flex items-center gap-2 px-5 py-2 rounded-lg text-sm font-medium transition-all",
+              activeTab === "videos" ? "bg-card text-foreground shadow-sm" : "text-muted-foreground"
+            )}
+          >
+            <Video className="w-4 h-4" />
+            {t("videoLib")}
           </button>
         </div>
 
         {activeTab === "audios" && (
           <>
-            {/* Suero terapia banner */}
             <div className="bg-card border border-primary/20 rounded-2xl p-5 mb-6 flex items-center gap-4">
-              <div className="w-12 h-12 rounded-2xl bg-primary/10 border border-primary/20 flex items-center justify-center shrink-0"><Volume2 className="w-6 h-6 text-primary"/></div>
+              <div className="w-12 h-12 rounded-2xl bg-primary/10 border border-primary/20 flex items-center justify-center shrink-0">
+                <Volume2 className="w-6 h-6 text-primary" />
+              </div>
               <div className="flex-1">
                 <p className="font-medium text-sm">Suero Terapia con Audio Binaural</p>
-                <p className="text-xs text-muted-foreground">Audio especializado para acompañar sesiones de suero terapia. Voz del Dr. + música binaural theta (60 min).</p>
+                <p className="text-xs text-muted-foreground">
+                  Audio para sesiones de suero. Voz del Dr. + binaural theta (60 min). Incluido desde Mes 1.
+                </p>
               </div>
-              <span className="text-[10px] bg-primary/10 text-primary border border-primary/20 px-2.5 py-1 rounded-full shrink-0" style={{fontFamily:"'DM Mono',monospace"}}>Premium</span>
+              <span
+                className="text-[10px] bg-primary/10 text-primary border border-primary/20 px-2.5 py-1 rounded-full shrink-0"
+                style={{ fontFamily: "'DM Mono', monospace" }}
+              >
+                Mes 1+
+              </span>
             </div>
 
-            {/* Instrucción para agregar audios */}
-            <div className="bg-muted/30 border border-border rounded-xl p-4 mb-6">
-              <p className="text-[10px] text-muted-foreground/60 leading-relaxed" style={{ fontFamily: "'DM Mono', monospace" }}>
-                💡 Para agregar audios reales: coloca tus archivos .mp3 en <strong className="text-muted-foreground/80">public/audios/</strong> y actualiza el campo <strong className="text-muted-foreground/80">audioSrc</strong> en el array AUDIOS del código.
-              </p>
-            </div>
-
-            {/* Filtros */}
             <div className="flex gap-2 mb-6 overflow-x-auto pb-1">
-              {["all","autohipnosis","binaural","podcasts"].map(cat=>(
-                <button key={cat} onClick={()=>setActiveCat(cat as any)} className={clsx("px-4 py-2 rounded-xl text-sm border transition-all whitespace-nowrap",activeCat===cat?"border-primary bg-primary/15 text-primary":"border-border text-muted-foreground hover:border-primary/30 hover:text-foreground")}>
-                  {cat==="all"?"Todos":cat==="autohipnosis"?t("autohipnosis"):cat==="binaural"?t("binaural"):t("podcasts")}
+              {(["all", "autohipnosis", "binaural", "podcasts"] as const).map((cat) => (
+                <button
+                  key={cat}
+                  onClick={() => setActiveCat(cat)}
+                  className={clsx(
+                    "px-4 py-2 rounded-xl text-sm border transition-all whitespace-nowrap",
+                    activeCat === cat
+                      ? "border-primary bg-primary/15 text-primary"
+                      : "border-border text-muted-foreground hover:border-primary/30 hover:text-foreground"
+                  )}
+                >
+                  {cat === "all"
+                    ? "Todos"
+                    : cat === "autohipnosis"
+                    ? t("autohipnosis")
+                    : cat === "binaural"
+                    ? t("binaural")
+                    : t("podcasts")}
                 </button>
               ))}
             </div>
 
             <div className="grid md:grid-cols-2 gap-4">
-              {filtered.map(audio => {
+              {filtered.map((audio) => {
+                const unlocked = puedeReproducir(audio, planActivo);
                 const isPlaying = playing === audio.id;
-                const CatIcon = audio.cat==="autohipnosis"?Mic:audio.cat==="binaural"?Music:Headphones;
-                const catColor = audio.cat==="autohipnosis"?"text-purple-400":audio.cat==="binaural"?"text-blue-400":"text-amber-400";
+                const CatIcon =
+                  audio.cat === "autohipnosis" ? Mic : audio.cat === "binaural" ? Music : Headphones;
+                const catColor =
+                  audio.cat === "autohipnosis"
+                    ? "text-purple-400"
+                    : audio.cat === "binaural"
+                    ? "text-blue-400"
+                    : "text-amber-400";
+
                 return (
-                  <div key={audio.id} className={clsx("bg-card border rounded-2xl p-4 transition-all", isPlaying?"border-primary/40":"border-border hover:border-primary/20")}>
+                  <div
+                    key={audio.id}
+                    className={clsx(
+                      "bg-card border rounded-2xl p-4 transition-all",
+                      isPlaying ? "border-primary/40" : "border-border hover:border-primary/20"
+                    )}
+                  >
                     <div className="flex items-start gap-3">
-                      <button onClick={() => handlePlay(audio)}
-                        className={clsx("w-10 h-10 rounded-xl flex items-center justify-center shrink-0 transition-colors",audio.free?"bg-primary/15 hover:bg-primary/25":"bg-muted cursor-not-allowed")}>
-                        {!audio.free?<Lock className="w-4 h-4 text-muted-foreground/50"/>:isPlaying?<Pause className="w-4 h-4 text-primary"/>:<Play className="w-4 h-4 text-primary"/>}
+                      <button
+                        onClick={() => handlePlay(audio)}
+                        className={clsx(
+                          "w-10 h-10 rounded-xl flex items-center justify-center shrink-0 transition-colors",
+                          unlocked ? "bg-primary/15 hover:bg-primary/25" : "bg-muted"
+                        )}
+                      >
+                        {!unlocked ? (
+                          <Lock className="w-4 h-4 text-muted-foreground/50" />
+                        ) : isPlaying ? (
+                          <Pause className="w-4 h-4 text-primary" />
+                        ) : (
+                          <Play className="w-4 h-4 text-primary" />
+                        )}
                       </button>
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 mb-1">
-                          <CatIcon className={clsx("w-3.5 h-3.5 shrink-0",catColor)}/>
-                          <span className="text-[10px] text-muted-foreground uppercase" style={{fontFamily:"'DM Mono',monospace"}}>{audio.duration}</span>
-                          <span className={clsx("ml-auto text-[10px] px-1.5 py-0.5 rounded-full border",audio.free?"bg-emerald-500/15 text-emerald-400 border-emerald-500/25":"bg-muted text-muted-foreground border-border")} style={{fontFamily:"'DM Mono',monospace"}}>
-                            {audio.free?t("free"):t("premium")}
+                          <CatIcon className={clsx("w-3.5 h-3.5 shrink-0", catColor)} />
+                          <span
+                            className="text-[10px] text-muted-foreground uppercase"
+                            style={{ fontFamily: "'DM Mono', monospace" }}
+                          >
+                            {audio.duration}
+                          </span>
+                          <span
+                            className={clsx(
+                              "ml-auto text-[10px] px-1.5 py-0.5 rounded-full border",
+                              audio.free
+                                ? "bg-emerald-500/15 text-emerald-400 border-emerald-500/25"
+                                : "bg-muted text-muted-foreground border-border"
+                            )}
+                            style={{ fontFamily: "'DM Mono', monospace" }}
+                          >
+                            {audio.free ? t("free") : audio.plans[0]?.toUpperCase() || t("premium")}
                           </span>
                         </div>
                         <p className="text-sm font-medium truncate">{audio.title}</p>
                         <p className="text-xs text-muted-foreground mt-0.5">{audio.desc}</p>
-                        {audio.doctor&&<p className="text-[10px] text-primary/70 mt-1.5">🎙️ Voz del Dr. Nikolas Escobar</p>}
-                        {audio.free && !audio.audioSrc && <p className="text-[10px] text-muted-foreground/40 mt-1" style={{fontFamily:"'DM Mono',monospace"}}>Agrega audioSrc para reproducción real</p>}
+                        {audio.doctor && (
+                          <p className="text-[10px] text-primary/70 mt-1.5">🎙️ Voz del Dr. Nikolas Escobar</p>
+                        )}
+                        {unlocked && !audio.audioSrc && (
+                          <p
+                            className="text-[10px] text-muted-foreground/40 mt-1"
+                            style={{ fontFamily: "'DM Mono', monospace" }}
+                          >
+                            Agrega audioSrc para reproducción real
+                          </p>
+                        )}
                       </div>
                     </div>
-                    {isPlaying&&(
+
+                    {isPlaying && (
                       <div className="mt-3 flex items-center gap-0.5 h-6">
-                        {Array.from({length:28},(_,i)=>(
-                          <div key={i} className="bg-primary/60 rounded-full w-1 animate-pulse" style={{height:`${14+Math.sin(i*0.6)*10}px`,animationDelay:`${i*0.05}s`}}/>
+                        {Array.from({ length: 28 }, (_, i) => (
+                          <div
+                            key={i}
+                            className="bg-primary/60 rounded-full w-1 animate-pulse"
+                            style={{
+                              height: `${14 + Math.sin(i * 0.6) * 10}px`,
+                              animationDelay: `${i * 0.05}s`,
+                            }}
+                          />
                         ))}
-                        <span className="ml-3 text-[10px] text-primary" style={{fontFamily:"'DM Mono',monospace"}}>
+                        <span
+                          className="ml-3 text-[10px] text-primary"
+                          style={{ fontFamily: "'DM Mono', monospace" }}
+                        >
                           {audio.audioSrc ? "REPRODUCIENDO" : "DEMO VISUAL"}
                         </span>
                       </div>
                     )}
-                    {!audio.free&&<p className="text-[10px] text-muted-foreground/40 mt-2">{t("locked")}</p>}
+
+                    {!unlocked && (
+                      <button
+                        onClick={() => navigate("/tratamientos")}
+                        className="text-[10px] text-primary mt-2 underline font-medium"
+                      >
+                        {t("locked")} — ver paquetes
+                      </button>
+                    )}
                   </div>
                 );
               })}
@@ -2786,76 +3990,170 @@ function AudioPage() {
 
         {activeTab === "videos" && (
           <>
-            {/* Instrucción para agregar videos */}
-            <div className="bg-muted/30 border border-border rounded-xl p-4 mb-6">
-              <p className="text-[10px] text-muted-foreground/60 leading-relaxed" style={{ fontFamily: "'DM Mono', monospace" }}>
-                💡 Para agregar videos reales: coloca tus archivos .mp4 en <strong className="text-muted-foreground/80">public/videos/</strong> y actualiza el campo <strong className="text-muted-foreground/80">videoSrc</strong> en el array VIDEOS del código. También puedes usar <strong className="text-muted-foreground/80">youtubeId</strong> para embeds de YouTube.
-              </p>
-            </div>
-
             <div className="grid md:grid-cols-2 gap-4">
-              {VIDEOS.map(video => (
-                <div key={video.id} className="bg-card border border-border rounded-2xl overflow-hidden hover:border-primary/30 transition-all group">
-                  {/* Thumbnail / Placeholder */}
-                  <div className="relative h-44 bg-gradient-to-br from-muted to-muted/50 flex items-center justify-center overflow-hidden">
-                    {video.thumbnail ? (
-                      <img src={video.thumbnail} alt={video.title} className="w-full h-full object-cover" />
-                    ) : (
-                      <div className="flex flex-col items-center gap-2 text-muted-foreground/30">
-                        <Video className="w-10 h-10" />
-                        <span className="text-[10px]" style={{ fontFamily: "'DM Mono', monospace" }}>{video.duration}</span>
-                      </div>
-                    )}
-                    {/* Overlay play */}
-                    <button onClick={() => setWatchingVideo(video)}
-                      className={clsx("absolute inset-0 flex items-center justify-center bg-black/30 opacity-0 group-hover:opacity-100 transition-opacity", !video.free && "cursor-not-allowed")}>
-                      <div className={clsx("w-14 h-14 rounded-full flex items-center justify-center",video.free?"bg-primary/90":"bg-muted/80")}>
-                        {video.free ? <Play className="w-6 h-6 text-white ml-1" /> : <Lock className="w-5 h-5 text-muted-foreground" />}
-                      </div>
-                    </button>
-                    <span className={clsx("absolute top-3 right-3 text-[10px] px-2 py-0.5 rounded-full border",video.free?"bg-emerald-500/80 text-white border-emerald-500":"bg-black/50 text-muted-foreground border-border")} style={{fontFamily:"'DM Mono',monospace"}}>
-                      {video.free ? t("free") : t("premium")}
-                    </span>
-                  </div>
-                  <div className="p-4">
-                    <div className="flex items-center gap-2 mb-1.5">
-                      <span className={clsx("text-[10px] px-2 py-0.5 rounded-md",video.cat==="autohipnosis"?"bg-purple-500/15 text-purple-400":"bg-blue-500/15 text-blue-400")} style={{fontFamily:"'DM Mono',monospace"}}>{video.cat}</span>
-                      <span className="text-[10px] text-muted-foreground ml-auto" style={{fontFamily:"'DM Mono',monospace"}}>{video.duration}</span>
+              {VIDEOS.map((video) => {
+                const unlocked = puedeReproducir(video, planActivo);
+                return (
+                  <div
+                    key={video.id}
+                    className="bg-card border border-border rounded-2xl overflow-hidden hover:border-primary/30 transition-all group"
+                  >
+                    <div className="relative h-44 bg-gradient-to-br from-muted to-muted/50 flex items-center justify-center overflow-hidden">
+                      {video.thumbnail ? (
+                        <img src={video.thumbnail} alt={video.title} className="w-full h-full object-cover" />
+                      ) : (
+                        <div className="flex flex-col items-center gap-2 text-muted-foreground/30">
+                          <Video className="w-10 h-10" />
+                          <span className="text-[10px]" style={{ fontFamily: "'DM Mono', monospace" }}>
+                            {video.duration}
+                          </span>
+                        </div>
+                      )}
+                      <button
+                        onClick={() => {
+                          if (!unlocked) {
+                            navigate("/tratamientos");
+                            return;
+                          }
+                          setWatchingVideo(video);
+                        }}
+                        className="absolute inset-0 flex items-center justify-center bg-black/30 opacity-0 group-hover:opacity-100 transition-opacity"
+                      >
+                        <div
+                          className={clsx(
+                            "w-14 h-14 rounded-full flex items-center justify-center",
+                            unlocked ? "bg-primary/90" : "bg-muted/80"
+                          )}
+                        >
+                          {unlocked ? (
+                            <Play className="w-6 h-6 text-white ml-1" />
+                          ) : (
+                            <Lock className="w-5 h-5 text-muted-foreground" />
+                          )}
+                        </div>
+                      </button>
+                      <span
+                        className={clsx(
+                          "absolute top-3 right-3 text-[10px] px-2 py-0.5 rounded-full border",
+                          video.free
+                            ? "bg-emerald-500/80 text-white border-emerald-500"
+                            : "bg-black/50 text-muted-foreground border-border"
+                        )}
+                        style={{ fontFamily: "'DM Mono', monospace" }}
+                      >
+                        {video.free ? t("free") : video.plans[0]?.toUpperCase() || t("premium")}
+                      </span>
                     </div>
-                    <p className="text-sm font-medium mb-1">{video.title}</p>
-                    <p className="text-xs text-muted-foreground mb-3">{video.desc}</p>
-                    {video.doctor && <p className="text-[10px] text-primary/70 mb-3">🎙️ Con el Dr. Nikolas Escobar</p>}
-                    <button onClick={() => video.free && setWatchingVideo(video)}
-                      disabled={!video.free}
-                      className={clsx("w-full py-2 rounded-xl text-sm font-medium transition-colors flex items-center justify-center gap-2",video.free?"bg-primary/15 text-primary hover:bg-primary/25":"bg-muted text-muted-foreground cursor-not-allowed")}>
-                      {video.free ? <><Play className="w-3.5 h-3.5"/>{t("watchVideo")}</> : <><Lock className="w-3.5 h-3.5"/>{t("locked")}</>}
-                    </button>
+                    <div className="p-4">
+                      <div className="flex items-center gap-2 mb-1.5">
+                        <span
+                          className={clsx(
+                            "text-[10px] px-2 py-0.5 rounded-md",
+                            video.cat === "autohipnosis"
+                              ? "bg-purple-500/15 text-purple-400"
+                              : "bg-blue-500/15 text-blue-400"
+                          )}
+                          style={{ fontFamily: "'DM Mono', monospace" }}
+                        >
+                          {video.cat}
+                        </span>
+                        <span
+                          className="text-[10px] text-muted-foreground ml-auto"
+                          style={{ fontFamily: "'DM Mono', monospace" }}
+                        >
+                          {video.duration}
+                        </span>
+                      </div>
+                      <p className="text-sm font-medium mb-1">{video.title}</p>
+                      <p className="text-xs text-muted-foreground mb-3">{video.desc}</p>
+                      {video.doctor && (
+                        <p className="text-[10px] text-primary/70 mb-3">🎙️ Con el Dr. Nikolas Escobar</p>
+                      )}
+                      <button
+                        onClick={() => {
+                          if (!unlocked) {
+                            navigate("/tratamientos");
+                            return;
+                          }
+                          setWatchingVideo(video);
+                        }}
+                        className={clsx(
+                          "w-full py-2 rounded-xl text-sm font-medium transition-colors flex items-center justify-center gap-2",
+                          unlocked
+                            ? "bg-primary/15 text-primary hover:bg-primary/25"
+                            : "bg-muted text-muted-foreground"
+                        )}
+                      >
+                        {unlocked ? (
+                          <>
+                            <Play className="w-3.5 h-3.5" />
+                            {t("watchVideo")}
+                          </>
+                        ) : (
+                          <>
+                            <Lock className="w-3.5 h-3.5" />
+                            {t("locked")}
+                          </>
+                        )}
+                      </button>
+                    </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           </>
         )}
 
-        {/* Group meetings */}
+        {/* Reuniones grupales */}
         <div className="mt-10" id="grupos">
-          <h2 className="font-medium mb-4 flex items-center gap-2"><Users className="w-4 h-4 text-primary"/>{t("groupMeetings")}</h2>
+          <h2 className="font-medium mb-4 flex items-center gap-2">
+            <Users className="w-4 h-4 text-primary" />
+            {t("groupMeetings")}
+          </h2>
           <p className="text-sm text-muted-foreground mb-4">{t("groupSub")}</p>
           <div className="grid md:grid-cols-2 gap-4">
             {[
-              {week:"Semana 1",title:"Sesión de Inicio",desc:"Bienvenida, presentación grupal y establecimiento de metas terapéuticas.",day:"Lunes",hour:"7:00 PM COT"},
-              {week:"Semana 3",title:"Sesión de Progreso",desc:"Revisión de avances, ajuste de estrategias y refuerzo motivacional.",day:"Lunes",hour:"7:00 PM COT"},
-            ].map(m=>(
+              {
+                week: "Semana 1",
+                title: "Sesión de Inicio",
+                desc: "Bienvenida, presentación grupal y metas terapéuticas.",
+                day: "Lunes",
+                hour: "7:00 PM COT",
+              },
+              {
+                week: "Semana 3",
+                title: "Sesión de Progreso",
+                desc: "Revisión de avances y refuerzo motivacional.",
+                day: "Lunes",
+                hour: "7:00 PM COT",
+              },
+            ].map((m) => (
               <div key={m.week} className="bg-card border border-border rounded-2xl p-5">
                 <div className="flex items-center gap-2 mb-3">
-                  <span className="text-[10px] bg-primary/15 text-primary border border-primary/25 px-2.5 py-1 rounded-full" style={{fontFamily:"'DM Mono',monospace"}}>{m.week}</span>
-                  <span className="text-[10px] text-muted-foreground" style={{fontFamily:"'DM Mono',monospace"}}>{m.day} · {m.hour}</span>
+                  <span
+                    className="text-[10px] bg-primary/15 text-primary border border-primary/25 px-2.5 py-1 rounded-full"
+                    style={{ fontFamily: "'DM Mono', monospace" }}
+                  >
+                    {m.week}
+                  </span>
+                  <span
+                    className="text-[10px] text-muted-foreground"
+                    style={{ fontFamily: "'DM Mono', monospace" }}
+                  >
+                    {m.day} · {m.hour}
+                  </span>
                 </div>
                 <h3 className="text-sm font-medium mb-1">{m.title}</h3>
                 <p className="text-xs text-muted-foreground mb-3">{m.desc}</p>
-                <div className="flex gap-2">
-                  <span className="flex items-center gap-1 text-[10px] bg-blue-500/10 text-blue-400 border border-blue-500/20 px-2.5 py-1 rounded-full"><Video className="w-3 h-3"/>{t("virtual")} (Zoom)</span>
-                  <span className="flex items-center gap-1 text-[10px] bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 px-2.5 py-1 rounded-full"><MapPin className="w-3 h-3"/>{t("presencial")}</span>
+                <div className="flex gap-2 flex-wrap">
+                  <span className="flex items-center gap-1 text-[10px] bg-blue-500/10 text-blue-400 border border-blue-500/20 px-2.5 py-1 rounded-full">
+                    <Video className="w-3 h-3" />
+                    {t("virtual")} (Zoom)
+                  </span>
+                  <span className="flex items-center gap-1 text-[10px] bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 px-2.5 py-1 rounded-full">
+                    <MapPin className="w-3 h-3" />
+                    {t("presencial")}
+                  </span>
                 </div>
               </div>
             ))}
@@ -2863,36 +4161,45 @@ function AudioPage() {
         </div>
       </div>
 
-      {/* Modal de video */}
-      {watchingVideo && <VideoModal video={watchingVideo} onClose={() => setWatchingVideo(null)} t={t} />}
+      {watchingVideo && (
+        <VideoModal video={watchingVideo} onClose={() => setWatchingVideo(null)} t={t} />
+      )}
     </div>
   );
 }
 
-function VideoModal({ video, onClose, t }: { video: VideoItem; onClose: () => void; t: (k: any) => string }) {
+function VideoModal({
+  video,
+  onClose,
+  t,
+}: {
+  video: VideoItem;
+  onClose: () => void;
+  t: (k: any) => string;
+}) {
   return (
-    <div className="fixed inset-0 bg-black/90 backdrop-blur-sm z-50 flex items-center justify-center p-4" onClick={onClose}>
-      <div className="bg-card border border-border rounded-2xl w-full max-w-2xl overflow-hidden" onClick={e => e.stopPropagation()}>
+    <div
+      className="fixed inset-0 bg-black/90 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+      onClick={onClose}
+    >
+      <div
+        className="bg-card border border-border rounded-2xl w-full max-w-2xl overflow-hidden"
+        onClick={(e) => e.stopPropagation()}
+      >
         <div className="flex items-center justify-between px-5 py-4 border-b border-border">
           <div>
             <h2 className="text-sm font-medium">{video.title}</h2>
-            <p className="text-xs text-muted-foreground">{video.duration} · {video.cat}</p>
+            <p className="text-xs text-muted-foreground">
+              {video.duration} · {video.cat}
+            </p>
           </div>
-          <button onClick={onClose} className="p-1.5 rounded-lg text-muted-foreground hover:bg-muted"><X className="w-4 h-4"/></button>
+          <button onClick={onClose} className="p-1.5 rounded-lg text-muted-foreground hover:bg-muted">
+            <X className="w-4 h-4" />
+          </button>
         </div>
 
-        {/* Reproductor de video */}
         <div className="aspect-video bg-black flex items-center justify-center relative">
-          {video.youtubeId ? (
-            // Embed de YouTube (privado/no listado)
-            <iframe
-              src={`https://www.youtube.com/embed/${video.youtubeId}?autoplay=1`}
-              className="w-full h-full"
-              allow="autoplay; fullscreen"
-              allowFullScreen
-            />
-          ) : video.videoSrc ? (
-            // Video local .mp4
+          {video.videoSrc ? (
             <video
               src={video.videoSrc}
               controls
@@ -2900,13 +4207,20 @@ function VideoModal({ video, onClose, t }: { video: VideoItem; onClose: () => vo
               className="w-full h-full"
               style={{ background: "#000" }}
             />
+          ) : video.youtubeId ? (
+            <iframe
+              src={`https://www.youtube.com/embed/${video.youtubeId}?autoplay=1`}
+              className="w-full h-full"
+              allow="autoplay; fullscreen"
+              allowFullScreen
+              title={video.title}
+            />
           ) : (
-            // Placeholder — sin video aún
             <div className="text-center text-muted-foreground/40">
               <Video className="w-16 h-16 mx-auto mb-3" />
               <p className="text-sm">Video no disponible aún</p>
               <p className="text-xs mt-1" style={{ fontFamily: "'DM Mono', monospace" }}>
-                Agrega videoSrc o youtubeId en el array VIDEOS
+                Agrega videoSrc o youtubeId en VIDEOS
               </p>
             </div>
           )}
@@ -2914,7 +4228,9 @@ function VideoModal({ video, onClose, t }: { video: VideoItem; onClose: () => vo
 
         <div className="px-5 py-4">
           <p className="text-sm text-muted-foreground">{video.desc}</p>
-          {video.doctor && <p className="text-[10px] text-primary/70 mt-2">🎙️ Con el Dr. Nikolas Escobar</p>}
+          {video.doctor && (
+            <p className="text-[10px] text-primary/70 mt-2">🎙️ Con el Dr. Nikolas Escobar</p>
+          )}
         </div>
       </div>
     </div>
@@ -2966,7 +4282,8 @@ function AdminPage() {
   const [formUsuario, setFormUsuario] = useState({ nombre: "", email: "", password: "", rol: "PACIENTE" });
   const [savingUser, setSavingUser] = useState(false);
   // Modal ver historia
-  const [historiaVer, setHistoriaVer] = useState<AdminHistoria | null>(null);
+
+  const [historiaVer, setHistoriaVer] = useState<any>(null);
 
   const jwt = localStorage.getItem("ch_jwt") || "";
   const headers = { "Content-Type": "application/json", Authorization: `Bearer ${jwt}` };
@@ -3342,7 +4659,8 @@ function AdminPage() {
                 <select value={formUsuario.rol} onChange={e => setFormUsuario(p => ({ ...p, rol: e.target.value }))}
                   className="w-full bg-muted/40 border border-border rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-primary/50">
                   <option value="PACIENTE">PACIENTE</option>
-                  <option value="ADMIN">ADMIN</option>
+                    <option value="MEDICO">MEDICO</option>
+                    <option value="ADMIN">ADMIN</option>
                 </select>
               </div>
             </div>
@@ -3363,28 +4681,1065 @@ function AdminPage() {
 
       {/* Modal Ver Historia */}
       {historiaVer && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
-          <div className="bg-card border border-border rounded-2xl p-6 w-full max-w-2xl shadow-2xl max-h-[80vh] flex flex-col">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="font-semibold">Historia Clínica #{historiaVer.id}</h3>
-              <button onClick={() => setHistoriaVer(null)} className="p-1.5 rounded-lg hover:bg-muted">
+        <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-card border border-border rounded-2xl w-full max-w-2xl max-h-[90vh] overflow-hidden flex flex-col shadow-2xl">
+            {/* Header */}
+            <div className="px-5 py-4 border-b border-border flex items-start justify-between gap-3 shrink-0">
+              <div>
+                <p className="text-[10px] text-primary uppercase tracking-widest mb-0.5">
+                  Historia clínica · Confidencial
+                </p>
+                <h2 className="font-semibold text-lg">
+                  #{historiaVer.id} · {historiaVer.nombre || "Paciente"}
+                </h2>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Riesgo: <strong>{historiaVer.nivelRiesgo || "—"}</strong>
+                  {" · "}
+                  Programa: <strong>{historiaVer.programaRecomendado || "—"}</strong>
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setHistoriaVer(null)}
+                className="p-2 rounded-lg text-muted-foreground hover:bg-muted"
+              >
                 <X className="w-4 h-4" />
               </button>
             </div>
-            <div className="overflow-y-auto flex-1 space-y-2 pr-1">
-              {historiaVer.respuestas && Object.entries(historiaVer.respuestas).map(([k, v]) => (
-                <div key={k} className="flex gap-3 bg-muted/20 rounded-xl px-3 py-2">
-                  <span className="text-xs text-muted-foreground capitalize min-w-[140px] shrink-0">{k.replace(/_/g, " ")}</span>
-                  <span className="text-sm font-medium break-words">{String(v)}</span>
+
+            {/* Body scrollable */}
+            <div className="px-5 py-4 space-y-4 overflow-y-auto flex-1">
+              {/* Datos básicos */}
+              <div className="grid grid-cols-2 gap-2 text-xs">
+                <div className="bg-muted/20 rounded-xl px-3 py-2">
+                  <span className="text-muted-foreground">Edad</span>
+                  <p className="font-medium text-sm">{historiaVer.edad || "—"}</p>
                 </div>
-              ))}
-              {!historiaVer.respuestas && (
-                <p className="text-sm text-muted-foreground text-center py-8">Sin datos de respuestas</p>
+                <div className="bg-muted/20 rounded-xl px-3 py-2">
+                  <span className="text-muted-foreground">Género</span>
+                  <p className="font-medium text-sm">{historiaVer.genero || "—"}</p>
+                </div>
+                <div className="bg-muted/20 rounded-xl px-3 py-2">
+                  <span className="text-muted-foreground">Ciudad</span>
+                  <p className="font-medium text-sm">{historiaVer.ciudad || "—"}</p>
+                </div>
+                <div className="bg-muted/20 rounded-xl px-3 py-2">
+                  <span className="text-muted-foreground">Email usuario</span>
+                  <p className="font-medium text-sm break-all">
+                    {historiaVer.usuarioEmail || historiaVer.email || "—"}
+                  </p>
+                </div>
+              </div>
+
+              {historiaVer.motivoConsulta && (
+                <div>
+                  <p className="text-xs text-muted-foreground mb-1">Motivo de consulta</p>
+                  <p className="text-sm bg-muted/20 rounded-xl px-3 py-2">{historiaVer.motivoConsulta}</p>
+                </div>
               )}
+
+              {/* Diagnóstico IA */}
+              <div>
+                <p className="text-xs font-medium text-muted-foreground mb-1">
+                  Diagnóstico IA (solo admin / médico)
+                </p>
+                {historiaVer.diagnosticoIa ? (
+                  <pre className="text-xs bg-muted/30 border border-border rounded-xl p-3 max-h-56 overflow-auto whitespace-pre-wrap">
+                    {typeof historiaVer.diagnosticoIa === "string"
+                      ? (() => {
+                          try {
+                            return JSON.stringify(JSON.parse(historiaVer.diagnosticoIa), null, 2);
+                          } catch {
+                            return historiaVer.diagnosticoIa;
+                          }
+                        })()
+                      : JSON.stringify(historiaVer.diagnosticoIa, null, 2)}
+                  </pre>
+                ) : (
+                  <p className="text-sm text-muted-foreground bg-muted/20 rounded-xl px-3 py-3">
+                    Sin diagnóstico IA guardado en esta historia. El paciente debe generar el análisis en
+                    /diagnostico.
+                  </p>
+                )}
+              </div>
+
+              {/* Respuestas de la historia */}
+              <div>
+                <p className="text-xs font-medium text-muted-foreground mb-2">Respuestas del cuestionario</p>
+                <div className="space-y-2">
+                  {historiaVer.respuestas &&
+                    Object.entries(historiaVer.respuestas).map(([k, v]) => (
+                      <div key={k} className="flex gap-3 bg-muted/20 rounded-xl px-3 py-2">
+                        <span className="text-xs text-muted-foreground capitalize min-w-[140px] shrink-0">
+                          {String(k).replace(/_/g, " ")}
+                        </span>
+                        <span className="text-sm font-medium break-words">{String(v)}</span>
+                      </div>
+                    ))}
+
+                  {/* Fallback: campos planos si no hay objeto respuestas */}
+                  {!historiaVer.respuestas && (
+                    <>
+                      {[
+                        ["sustancias", historiaVer.sustancias],
+                        ["sustancia principal", historiaVer.sustanciaPrincipal],
+                        ["frecuencia", historiaVer.frecuencia],
+                        ["último consumo", historiaVer.ultimoConsumo],
+                        ["ideación", historiaVer.ideacion],
+                        ["diagnósticos previos", historiaVer.diagnosticos],
+                        ["enfermedades", historiaVer.enfermedades],
+                      ]
+                        .filter(([, v]) => v != null && String(v).trim() !== "")
+                        .map(([k, v]) => (
+                          <div key={String(k)} className="flex gap-3 bg-muted/20 rounded-xl px-3 py-2">
+                            <span className="text-xs text-muted-foreground capitalize min-w-[140px] shrink-0">
+                              {k}
+                            </span>
+                            <span className="text-sm font-medium break-words">{String(v)}</span>
+                          </div>
+                        ))}
+
+                      {![
+                        historiaVer.sustancias,
+                        historiaVer.sustanciaPrincipal,
+                        historiaVer.frecuencia,
+                        historiaVer.ultimoConsumo,
+                        historiaVer.ideacion,
+                        historiaVer.diagnosticos,
+                        historiaVer.enfermedades,
+                      ].some((v) => v != null && String(v).trim() !== "") && (
+                        <p className="text-sm text-muted-foreground text-center py-6">
+                          Sin datos de respuestas
+                        </p>
+                      )}
+                    </>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {/* Footer */}
+            <div className="px-5 py-3 border-t border-border flex justify-end shrink-0">
+              <button
+                type="button"
+                onClick={() => setHistoriaVer(null)}
+                className="px-4 py-2 rounded-xl border border-border text-sm hover:bg-muted"
+              >
+                Cerrar
+              </button>
             </div>
           </div>
         </div>
       )}
+    </div>
+  );
+}
+function MedicoRoute({ children }: { children: React.ReactNode }) {
+  const { user } = useAuth();
+  if (!user) return <Navigate to="/auth" replace />;
+  const rol = String(user.rol || "").toUpperCase();
+  if (!["MEDICO", "ADMIN", "PSICOLOGO", "PSIQUIATRA"].includes(rol)) {
+    return <Navigate to="/" replace />;
+  }
+  return <>{children}</>;
+}
+
+function MedicoDashboard() {
+  const API = (import.meta.env.VITE_API_URL as string) || "http://localhost:8080";
+  const jwt = localStorage.getItem("ch_jwt") || "";
+  const [historias, setHistorias] = useState<any[]>([]);
+  const [sel, setSel] = useState<any>(null);
+  const [obsList, setObsList] = useState<any[]>([]);
+  const [obs, setObs] = useState("");
+  const [valida, setValida] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState("");
+
+  const headers = {
+    "Content-Type": "application/json",
+    Authorization: `Bearer ${jwt}`,
+  };
+
+  useEffect(() => {
+    fetch(`${API}/api/medico/historias`, { headers })
+      .then(async (r) => {
+        const j = await r.json();
+        if (!r.ok) throw new Error(j.message || j.mensaje || "Error al cargar historias");
+        setHistorias(Array.isArray(j.data) ? j.data : []);
+      })
+      .catch((e) => {
+        setHistorias([]);
+        setError(e.message || "Backend /api/medico no responde");
+      })
+      .finally(() => setLoading(false));
+  }, []);
+
+  function formatDiag(raw: any): string {
+    if (raw == null || raw === "") return "";
+    if (typeof raw === "object") {
+      try {
+        return JSON.stringify(raw, null, 2);
+      } catch {
+        return String(raw);
+      }
+    }
+    const s = String(raw).trim();
+    try {
+      const p = JSON.parse(s);
+      return typeof p === "object" ? JSON.stringify(p, null, 2) : s;
+    } catch {
+      return s;
+    }
+  }
+
+  const abrir = async (h: any) => {
+    setSel(h);
+    setObs("");
+    setValida(false);
+    setError("");
+    try {
+      const r = await fetch(`${API}/api/medico/historias/${h.id}/observaciones`, { headers });
+      const j = await r.json();
+      setObsList(Array.isArray(j.data) ? j.data : []);
+    } catch {
+      setObsList([]);
+    }
+  };
+
+  const guardarObs = async () => {
+    if (!sel || !obs.trim()) return;
+    setSaving(true);
+    setError("");
+    try {
+      const r = await fetch(`${API}/api/medico/historias/${sel.id}/observaciones`, {
+        method: "POST",
+        headers,
+        body: JSON.stringify({ texto: obs.trim(), validaIa: valida }),
+      });
+      const j = await r.json();
+      if (!r.ok) throw new Error(j.message || j.mensaje || "No se pudo guardar");
+      setObs("");
+      setValida(false);
+      await abrir(sel);
+    } catch (e: any) {
+      setError(e.message || "No se pudo guardar. Verifique backend /api/medico");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <Loader2 className="w-8 h-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  return (
+    <div className="max-w-6xl mx-auto px-4 py-8 grid md:grid-cols-2 gap-6">
+      {/* Lista */}
+      <div>
+        <h1 className="text-xl font-bold mb-1">Panel médico</h1>
+        <p className="text-xs text-muted-foreground mb-4">
+          Acceso confidencial · Diagnósticos e historias de pacientes
+        </p>
+        {error && !sel && (
+          <p className="text-xs text-red-400 mb-3 border border-red-500/30 rounded-lg p-2">{error}</p>
+        )}
+        <div className="space-y-2 max-h-[70vh] overflow-y-auto">
+          {historias.map((h) => (
+            <button
+              key={h.id}
+              type="button"
+              onClick={() => abrir(h)}
+              className={
+                "w-full text-left bg-card border rounded-xl p-3 transition-colors " +
+                (sel?.id === h.id
+                  ? "border-primary/60 bg-primary/5"
+                  : "border-border hover:border-primary/40")
+              }
+            >
+              <div className="text-sm font-medium">
+                #{h.id} · {h.nombre || "Paciente"}
+              </div>
+              <div className="text-xs text-muted-foreground">
+                Riesgo {h.nivelRiesgo || "—"} · {h.programaRecomendado || "sin programa"}
+              </div>
+              {h.usuarioEmail && (
+                <div className="text-[10px] text-muted-foreground/70 mt-0.5">{h.usuarioEmail}</div>
+              )}
+              <div className="text-[10px] mt-1">
+                {h.diagnosticoIa ? (
+                  <span className="text-emerald-400">Diagnóstico IA disponible</span>
+                ) : (
+                  <span className="text-muted-foreground">Sin diagnóstico IA</span>
+                )}
+              </div>
+            </button>
+          ))}
+          {historias.length === 0 && (
+            <p className="text-sm text-muted-foreground">
+              No hay historias o el backend /api/medico aún no responde.
+            </p>
+          )}
+        </div>
+      </div>
+
+      {/* Detalle */}
+      <div className="bg-card border border-border rounded-2xl p-5 space-y-3">
+        {!sel ? (
+          <p className="text-sm text-muted-foreground">Seleccione una historia para ver el diagnóstico</p>
+        ) : (
+          <>
+            <h2 className="font-semibold">
+              Historia #{sel.id} · {sel.nombre || "Paciente"}
+            </h2>
+
+            <div className="grid grid-cols-2 gap-2 text-xs text-muted-foreground">
+              <span>
+                Edad: <strong className="text-foreground">{sel.edad || "—"}</strong>
+              </span>
+              <span>
+                Género: <strong className="text-foreground">{sel.genero || "—"}</strong>
+              </span>
+              <span>
+                Ciudad: <strong className="text-foreground">{sel.ciudad || "—"}</strong>
+              </span>
+              <span>
+                Riesgo: <strong className="text-foreground">{sel.nivelRiesgo || "—"}</strong>
+              </span>
+              <span className="col-span-2">
+                Programa: <strong className="text-foreground">{sel.programaRecomendado || "—"}</strong>
+              </span>
+            </div>
+
+            {sel.motivoConsulta && (
+              <div>
+                <p className="text-xs text-muted-foreground mb-1">Motivo de consulta</p>
+                <p className="text-sm bg-muted/30 rounded-lg p-2">{sel.motivoConsulta}</p>
+              </div>
+            )}
+
+            {(sel.sustancias || sel.sustanciaPrincipal) && (
+              <div className="text-xs space-y-1 bg-muted/20 rounded-lg p-2">
+                {sel.sustancias && (
+                  <p>
+                    Sustancias: <strong>{sel.sustancias}</strong>
+                  </p>
+                )}
+                {sel.sustanciaPrincipal && (
+                  <p>
+                    Principal: <strong>{sel.sustanciaPrincipal}</strong>
+                  </p>
+                )}
+                {sel.frecuencia && (
+                  <p>
+                    Frecuencia: <strong>{sel.frecuencia}</strong>
+                  </p>
+                )}
+                {sel.ideacion && (
+                  <p className="text-amber-400">
+                    Ideación: <strong>{sel.ideacion}</strong>
+                  </p>
+                )}
+              </div>
+            )}
+
+            <p className="text-xs font-medium text-muted-foreground">
+              Diagnóstico IA (confidencial · solo staff)
+            </p>
+            <pre className="text-xs bg-muted/30 rounded-xl p-3 max-h-56 overflow-auto whitespace-pre-wrap">
+              {formatDiag(sel.diagnosticoIa) ||
+                "Sin diagnóstico IA guardado en esta historia.\nEl paciente debe completar evaluación y generar diagnóstico en /diagnostico."}
+            </pre>
+
+            <div className="space-y-2">
+              <p className="text-xs font-medium">Observaciones del profesional</p>
+              {obsList.length === 0 && (
+                <p className="text-xs text-muted-foreground">Sin observaciones todavía.</p>
+              )}
+              {obsList.map((o) => (
+                <div key={o.id} className="text-xs border border-border rounded-lg p-2">
+                  <p>{o.texto}</p>
+                  <p className="text-muted-foreground mt-1">
+                    {o.validaIa ? "✓ Valida IA · " : ""}
+                    {o.medicoNombre ? `${o.medicoNombre} · ` : ""}
+                    {o.creadoEn ? new Date(o.creadoEn).toLocaleString("es-CO") : ""}
+                  </p>
+                </div>
+              ))}
+            </div>
+
+            <label className="flex items-center gap-2 text-sm">
+              <input
+                type="checkbox"
+                checked={valida}
+                onChange={(e) => setValida(e.target.checked)}
+              />
+              Valido la orientación de la IA (con mis notas)
+            </label>
+
+            <textarea
+              value={obs}
+              onChange={(e) => setObs(e.target.value)}
+              rows={4}
+              className="w-full bg-muted/40 border border-border rounded-xl p-3 text-sm"
+              placeholder="Observación clínica del profesional..."
+            />
+
+            {error && sel && <p className="text-xs text-red-400">{error}</p>}
+
+            <button
+              type="button"
+              onClick={guardarObs}
+              disabled={saving || !obs.trim()}
+              className="w-full py-2.5 rounded-xl bg-primary text-primary-foreground text-sm font-medium disabled:opacity-40"
+            >
+              {saving ? "Guardando…" : "Guardar observación"}
+            </button>
+          </>
+        )}
+      </div>
+    </div>
+  );
+}
+
+
+// ═══════════════════════════════════════════════════════
+//Acompañamiento
+// ══════════════════════════════════════════════════════
+
+function AcompanamientoPage() {
+  const navigate = useNavigate();
+  const { user } = useAuth();
+  const API = (import.meta.env.VITE_API_URL as string) || "http://localhost:8080";
+  const [msgs, setMsgs] = useState<{ role: "user" | "bot"; text: string }[]>([
+    {
+      role: "bot",
+      text:
+        `Hola${user?.name ? ", " + String(user.name).split(" ")[0] : ""}. ` +
+        "Este es un espacio seguro de acompañamiento. Puede contarme cómo se siente. " +
+        "Emergencia: Línea de la Vida 800-911-2000 o 123.",
+    },
+  ]);
+  const [text, setText] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [checking, setChecking] = useState(true);
+  const bottomRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [msgs, loading]);
+
+  // Si no tiene historia clínica → ir a /historia
+  useEffect(() => {
+    const jwt = localStorage.getItem("ch_jwt") || "";
+    if (!jwt) {
+      navigate("/auth");
+      return;
+    }
+    fetch(`${API}/api/historia/existe`, {
+      headers: { Authorization: `Bearer ${jwt}` },
+    })
+      .then((r) => r.json())
+      .then((j) => {
+        const tiene = j?.data?.tieneHistoria === true;
+        if (!tiene) navigate("/historia");
+      })
+      .catch(() => {
+        // Si falla el endpoint, no bloqueamos el chat
+      })
+      .finally(() => setChecking(false));
+  }, [API, navigate]);
+
+  async function enviar() {
+    const mensaje = text.trim();
+    if (!mensaje || loading) return;
+    setText("");
+    setMsgs((m) => [...m, { role: "user", text: mensaje }]);
+    setLoading(true);
+
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 45000);
+
+    try {
+      const jwt = localStorage.getItem("ch_jwt") || "";
+      const r = await fetch(`${API}/api/chat/acompanamiento`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${jwt}`,
+        },
+        body: JSON.stringify({ mensaje }),
+        signal: controller.signal,
+      });
+      const j = await r.json();
+      if (!r.ok) throw new Error(j.message || "No se pudo responder");
+      setMsgs((m) => [
+        ...m,
+        { role: "bot", text: j.data?.respuesta || "Estoy aquí para escucharle." },
+      ]);
+    } catch (e: any) {
+      const msg =
+        e?.name === "AbortError"
+          ? "La respuesta está tardando demasiado. Intente de nuevo en unos segundos."
+          : e?.message?.includes("503") || e?.message?.includes("UNAVAILABLE")
+          ? "El servicio de IA está saturado temporalmente. Espere un momento e intente otra vez."
+          : e?.message || "Error de conexión. Intente de nuevo.";
+      setMsgs((m) => [...m, { role: "bot", text: msg }]);
+    } finally {
+      clearTimeout(timer);
+      setLoading(false);
+    }
+  }
+
+  if (checking) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <Loader2 className="w-8 h-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen bg-background flex flex-col max-w-3xl mx-auto pb-8">
+      <header className="px-4 py-4 border-b border-border flex items-center justify-between gap-3">
+        <div>
+          <h1 className="text-lg font-bold">Acompañamiento</h1>
+          <p className="text-xs text-muted-foreground">
+            Espacio para ser escuchado · Apoyo + equipo clínico
+          </p>
+        </div>
+        <div className="flex gap-2 flex-wrap justify-end">
+          <button
+            onClick={() => navigate("/mi-historial")}
+            className="text-xs px-3 py-2 rounded-xl border border-border"
+          >
+            Mi historial
+          </button>
+          <button
+            onClick={() => navigate("/tratamientos")}
+            className="text-xs px-3 py-2 rounded-xl bg-primary text-primary-foreground font-medium"
+          >
+            Ver paquetes
+          </button>
+        </div>
+      </header>
+
+      <div className="flex-1 overflow-y-auto px-4 py-5 space-y-3 min-h-[50vh]">
+        {msgs.map((m, i) => (
+          <div
+            key={i}
+            className={
+              m.role === "user"
+                ? "ml-auto max-w-[85%] bg-primary/15 border border-primary/25 rounded-2xl px-4 py-3 text-sm"
+                : "mr-auto max-w-[85%] bg-card border border-border rounded-2xl px-4 py-3 text-sm"
+            }
+          >
+            {m.text}
+          </div>
+        ))}
+        {loading && (
+          <p className="text-xs text-muted-foreground flex items-center gap-2">
+            <Loader2 className="w-3.5 h-3.5 animate-spin" /> Escribiendo…
+          </p>
+        )}
+        <div ref={bottomRef} />
+      </div>
+
+     <div className="px-4 pb-2">
+       <div className="bg-primary/5 border border-primary/20 rounded-xl p-3 text-xs text-muted-foreground flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3">
+         <span>
+           Paso recomendado: <strong className="text-foreground">Programa Mes 1</strong>. Luego agenda consulta.
+         </span>
+         <div className="flex gap-2 flex-wrap">
+           <button
+             type="button"
+             onClick={() => navigate("/tratamientos")}
+             className="text-xs px-3 py-1.5 rounded-lg bg-primary text-primary-foreground font-medium"
+           >
+             Ver paquetes
+           </button>
+           <button
+             type="button"
+             onClick={() => navigate("/agendar-cita")}
+             className="text-xs px-3 py-1.5 rounded-lg border border-border"
+           >
+             Agendar cita
+           </button>
+         </div>
+       </div>
+     </div>
+
+      <div className="border-t border-border p-4 flex gap-2">
+        <input
+          value={text}
+          onChange={(e) => setText(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === "Enter" && !e.shiftKey) {
+              e.preventDefault();
+              enviar();
+            }
+          }}
+          placeholder="Escriba cómo se siente…"
+          className="flex-1 bg-muted/40 border border-border rounded-xl px-4 py-3 text-sm"
+        />
+        <button
+          onClick={enviar}
+          disabled={loading || !text.trim()}
+          className="px-4 rounded-xl bg-primary text-primary-foreground text-sm font-medium disabled:opacity-40"
+        >
+          Enviar
+        </button>
+      </div>
+    </div>
+  );
+}
+//fin acompañamiento
+
+//mi-historia
+
+function MiHistorialPage() {
+  const navigate = useNavigate();
+  const [items, setItems] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+  const API = (import.meta.env.VITE_API_URL as string) || "http://localhost:8080";
+
+  useEffect(() => {
+    const jwt = localStorage.getItem("ch_jwt");
+    if (!jwt) {
+      setError("Debe iniciar sesión");
+      setLoading(false);
+      return;
+    }
+    fetch(`${API}/api/historia/mias`, {
+      headers: { Authorization: `Bearer ${jwt}` },
+    })
+      .then(async (r) => {
+        const j = await r.json();
+        if (!r.ok) throw new Error(j.message || "No se pudo cargar el historial");
+        setItems(j.data || []);
+      })
+      .catch((e) => setError(e.message || "Error de red"))
+      .finally(() => setLoading(false));
+  }, []);
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <Loader2 className="w-8 h-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen bg-background pb-16">
+      <div className="max-w-3xl mx-auto px-4 py-8 space-y-4">
+        <div className="flex items-center justify-between gap-3">
+          <div>
+            <h1 className="text-xl font-bold">Mi historial clínico</h1>
+            <p className="text-sm text-muted-foreground">
+              Resumen de sus evaluaciones registradas en la clínica.
+            </p>
+          </div>
+          <button
+            onClick={() => navigate("/historia")}
+            className="text-xs px-3 py-2 rounded-xl border border-border hover:bg-muted"
+          >
+            Nueva evaluación
+          </button>
+        </div>
+
+        {error && <p className="text-sm text-destructive">{error}</p>}
+
+        {items.map((h) => (
+          <div key={h.id} className="bg-card border border-border rounded-2xl p-4 space-y-2">
+            <div className="flex justify-between gap-2 flex-wrap">
+              <span className="text-sm font-medium">Historia #{h.id}</span>
+              <span className="text-xs text-muted-foreground">
+                {h.creadoEn
+                  ? new Date(h.creadoEn).toLocaleString("es-CO")
+                  : h.consentimientoFecha
+                  ? new Date(h.consentimientoFecha).toLocaleString("es-CO")
+                  : "—"}
+              </span>
+            </div>
+            <p className="text-xs">
+              Riesgo: <strong>{h.nivelRiesgo || "Pendiente"}</strong>
+              {" · "}
+              Programa: <strong>{h.programaRecomendado || "—"}</strong>
+            </p>
+            {h.diagnosticoIa && (
+              <p className="text-xs text-muted-foreground line-clamp-3">
+                {typeof h.diagnosticoIa === "string"
+                  ? h.diagnosticoIa.replace(/[{}\[\]"]/g, " ").slice(0, 220)
+                  : "Diagnóstico registrado"}
+              </p>
+            )}
+            <button
+              onClick={() => navigate("/diagnostico")}
+              className="text-xs text-primary hover:underline"
+            >
+              Ver orientación / paquetes
+            </button>
+          </div>
+        ))}
+
+        {!error && items.length === 0 && (
+          <div className="text-center py-12 text-sm text-muted-foreground border border-border rounded-2xl">
+            Aún no tiene historias registradas.
+            <div className="mt-3">
+              <button
+                onClick={() => navigate("/historia")}
+                className="px-4 py-2 rounded-xl bg-primary text-primary-foreground text-sm"
+              >
+                Iniciar historia clínica
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ═══════════════════════════════════════════════════════
+// AGENDAR CITA + MIS CITAS
+// ═══════════════════════════════════════════════════════
+
+function AgendarCitaPage() {
+  const navigate = useNavigate();
+  const API = (import.meta.env.VITE_API_URL as string) || "http://localhost:8080";
+  const [modalidad, setModalidad] = useState<"VIRTUAL_REAL" | "APOYO_IA">("VIRTUAL_REAL");
+  const [pros, setPros] = useState<any[]>([]);
+  const [profId, setProfId] = useState("");
+  const [fecha, setFecha] = useState("");
+  const [notas, setNotas] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [msg, setMsg] = useState("");
+  const [err, setErr] = useState("");
+
+  useEffect(() => {
+    const jwt = localStorage.getItem("ch_jwt") || "";
+    fetch(`${API}/api/citas/profesionales`, {
+      headers: { Authorization: `Bearer ${jwt}` },
+    })
+      .then((r) => r.json())
+      .then((j) => setPros(Array.isArray(j.data) ? j.data : Array.isArray(j) ? j : []))
+      .catch(() => setPros([]));
+  }, [API]);
+
+  /** datetime-local → formato que acepta Java LocalDateTime (sin Z ni ms) */
+  function toLocalDateTime(value: string): string | null {
+    if (!value) return null;
+    // "2026-08-19T10:23" → "2026-08-19T10:23:00"
+    if (/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/.test(value)) {
+      return value + ":00";
+    }
+    // limpia ms / Z si vinieran
+    return value
+      .replace(/\.\d{3}Z?$/i, "")
+      .replace(/Z$/i, "")
+      .slice(0, 19);
+  }
+
+  async function submit() {
+    setLoading(true);
+    setMsg("");
+    setErr("");
+    try {
+      const jwt = localStorage.getItem("ch_jwt") || "";
+      const body: Record<string, unknown> = {
+        modalidad,
+        notasPaciente: notas?.trim() || null,
+      };
+
+      if (modalidad === "VIRTUAL_REAL") {
+        if (!profId) throw new Error("Seleccione un profesional");
+        if (!fecha) throw new Error("Seleccione fecha y hora");
+        body.profesionalId = Number(profId);
+        body.fechaHora = toLocalDateTime(fecha); // ✅ sin toISOString
+      } else {
+        // APOYO_IA
+        body.fechaHora = fecha
+          ? toLocalDateTime(fecha)
+          : toLocalDateTime(new Date().toISOString().slice(0, 16));
+      }
+
+      const r = await fetch(`${API}/api/citas`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${jwt}`,
+        },
+        body: JSON.stringify(body),
+      });
+      const j = await r.json();
+      if (!r.ok) throw new Error(j.message || j.mensaje || "No se pudo agendar");
+
+      setMsg("Cita registrada. Se notificó por correo.");
+      if (modalidad === "APOYO_IA") {
+        setTimeout(() => navigate("/acompanamiento"), 1200);
+      } else {
+        setTimeout(() => navigate("/mis-citas"), 1200);
+      }
+    } catch (e: any) {
+      setErr(e.message || "Error al agendar");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  return (
+    <div
+      className="min-h-screen bg-background px-4 py-8"
+      style={{ fontFamily: "'Plus Jakarta Sans', 'DM Sans', sans-serif" }}
+    >
+      <div className="max-w-lg mx-auto space-y-4">
+        <button type="button" onClick={() => navigate(-1)} className="text-sm text-muted-foreground">
+          ← Volver
+        </button>
+        <h1 className="text-xl font-bold">Agendar consulta</h1>
+        <p className="text-sm text-muted-foreground leading-relaxed">
+          Profesional real (videollamada) o apoyo por chat. Crisis:{" "}
+          <strong>800-911-2000</strong> · <strong>123</strong>.
+        </p>
+
+        <div className="flex gap-2">
+          <button
+            type="button"
+            onClick={() => setModalidad("VIRTUAL_REAL")}
+            className={`flex-1 py-2.5 rounded-xl text-sm border ${
+              modalidad === "VIRTUAL_REAL" ? "border-primary bg-primary/10" : "border-border"
+            }`}
+          >
+            Profesional real
+          </button>
+          <button
+            type="button"
+            onClick={() => setModalidad("APOYO_IA")}
+            className={`flex-1 py-2.5 rounded-xl text-sm border ${
+              modalidad === "APOYO_IA" ? "border-primary bg-primary/10" : "border-border"
+            }`}
+          >
+            Apoyo IA (chat)
+          </button>
+        </div>
+
+        {modalidad === "VIRTUAL_REAL" && (
+          <select
+            value={profId}
+            onChange={(e) => setProfId(e.target.value)}
+            className="w-full bg-muted/40 border border-border rounded-xl px-3 py-2.5 text-sm"
+          >
+            <option value="">Seleccione profesional…</option>
+            {pros.map((p: any) => (
+              <option key={p.id} value={p.id}>
+                {(p.nombre || p.name || p.email) +
+                  (p.especialidad ? " · " + p.especialidad : p.rol ? " · " + p.rol : "")}
+              </option>
+            ))}
+          </select>
+        )}
+
+        <input
+          type="datetime-local"
+          value={fecha}
+          onChange={(e) => setFecha(e.target.value)}
+          className="w-full bg-muted/40 border border-border rounded-xl px-3 py-2.5 text-sm"
+        />
+
+        <textarea
+          value={notas}
+          onChange={(e) => setNotas(e.target.value)}
+          rows={3}
+          placeholder="Cómo se siente, si el sismo le afectó…"
+          className="w-full bg-muted/40 border border-border rounded-xl px-3 py-2.5 text-sm"
+        />
+
+        <button
+          type="button"
+          onClick={submit}
+          disabled={loading || (modalidad === "VIRTUAL_REAL" && (!profId || !fecha))}
+          className="w-full py-3 rounded-xl text-sm font-semibold disabled:opacity-40"
+          style={{ background: "linear-gradient(135deg, #0ccec6, #07a8a2)", color: "#031014" }}
+        >
+          {loading ? "Agendando…" : "Confirmar y notificar por correo"}
+        </button>
+
+        {msg && <p className="text-sm text-emerald-400">{msg}</p>}
+        {err && <p className="text-sm text-red-400">{err}</p>}
+      </div>
+    </div>
+  );
+}
+function MisCitasPage() {
+  const navigate = useNavigate();
+  const API = (import.meta.env.VITE_API_URL as string) || "http://localhost:8080";
+  const [citas, setCitas] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [err, setErr] = useState("");
+
+  useEffect(() => {
+    const jwt = localStorage.getItem("ch_jwt") || "";
+    fetch(`${API}/api/citas/mias`, {
+      headers: { Authorization: `Bearer ${jwt}` },
+    })
+      .then(async (r) => {
+        const j = await r.json();
+        if (!r.ok) throw new Error(j.message || j.mensaje || "No se pudieron cargar las citas");
+        setCitas(Array.isArray(j.data) ? j.data : []);
+      })
+      .catch((e) => setErr(e.message || "Error de conexión"))
+      .finally(() => setLoading(false));
+  }, [API]);
+
+  function formatFecha(f: string | null) {
+    if (!f) return "Por confirmar";
+    try {
+      return new Date(f).toLocaleString("es-CO", {
+        dateStyle: "medium",
+        timeStyle: "short",
+      });
+    } catch {
+      return f;
+    }
+  }
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <Loader2 className="w-8 h-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  return (
+    <div
+      className="min-h-screen bg-background px-4 py-8"
+      style={{ fontFamily: "'Plus Jakarta Sans', 'DM Sans', sans-serif" }}
+    >
+      <div className="max-w-2xl mx-auto space-y-5">
+        <div className="flex items-center justify-between gap-3">
+          <div>
+            <p className="text-[10px] text-primary uppercase tracking-widest">Mis citas</p>
+            <h1 className="text-xl font-bold">Consultas agendadas</h1>
+            <p className="text-xs text-muted-foreground mt-1">
+              Videollamada con profesional o chat de apoyo IA
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={() => navigate("/agendar-cita")}
+            className="text-sm px-4 py-2 rounded-xl font-medium"
+            style={{ background: "linear-gradient(135deg, #0ccec6, #07a8a2)", color: "#031014" }}
+          >
+            + Nueva cita
+          </button>
+        </div>
+
+        {err && (
+          <p className="text-sm text-red-400 border border-red-500/30 rounded-xl p-3">{err}</p>
+        )}
+
+        {citas.length === 0 && !err && (
+          <div className="bg-card border border-border rounded-2xl p-8 text-center space-y-3">
+            <p className="text-sm text-muted-foreground">Aún no tiene citas registradas.</p>
+            <button
+              type="button"
+              onClick={() => navigate("/agendar-cita")}
+              className="text-sm px-4 py-2 rounded-xl border border-border hover:border-primary/40"
+            >
+              Agendar ahora
+            </button>
+          </div>
+        )}
+
+        <div className="space-y-3">
+          {citas.map((c) => {
+            const esIa =
+              String(c.modalidad || "").toUpperCase().includes("IA") ||
+              String(c.modalidad || "").toUpperCase() === "APOYO_IA";
+            const profNombre =
+              c.profesional?.nombre ||
+              c.profesionalNombre ||
+              (esIa ? "Apoyo IA (chat)" : "Profesional");
+            const meet = c.meetLink || c.meet_link;
+
+            return (
+              <div
+                key={c.id}
+                className="bg-card border border-border rounded-2xl p-4 space-y-3"
+              >
+                <div className="flex items-start justify-between gap-2">
+                  <div>
+                    <p className="text-sm font-semibold">
+                      #{c.id} · {profNombre}
+                    </p>
+                    <p className="text-xs text-muted-foreground mt-0.5">
+                      {formatFecha(c.fechaHora || c.fecha_hora)}
+                    </p>
+                  </div>
+                  <span
+                    className={
+                      "text-[10px] px-2 py-1 rounded-lg border " +
+                      (c.estado === "CONFIRMADA"
+                        ? "border-emerald-500/30 text-emerald-400"
+                        : "border-border text-muted-foreground")
+                    }
+                  >
+                    {c.estado || "PENDIENTE"}
+                  </span>
+                </div>
+
+                <p className="text-xs text-muted-foreground">
+                  Modalidad: <strong className="text-foreground">{c.modalidad || "—"}</strong>
+                </p>
+
+                {c.notasPaciente && (
+                  <p className="text-xs bg-muted/30 rounded-lg px-3 py-2">{c.notasPaciente}</p>
+                )}
+
+                <div className="flex flex-wrap gap-2">
+                  {esIa ? (
+                    <button
+                      type="button"
+                      onClick={() => navigate("/acompanamiento")}
+                      className="text-sm px-4 py-2 rounded-xl font-medium"
+                      style={{
+                        background: "linear-gradient(135deg, #0ccec6, #07a8a2)",
+                        color: "#031014",
+                      }}
+                    >
+                      Entrar al chat de apoyo
+                    </button>
+                  ) : meet ? (
+                    <a
+                      href={meet.startsWith("http") ? meet : `https://${meet}`}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="text-sm px-4 py-2 rounded-xl font-medium inline-flex items-center"
+                      style={{
+                        background: "linear-gradient(135deg, #0ccec6, #07a8a2)",
+                        color: "#031014",
+                      }}
+                    >
+                      Unirse a videollamada
+                    </a>
+                  ) : (
+                    <p className="text-xs text-amber-400">
+                      El profesional aún no cargó el link de Meet. Se enviará por correo.
+                    </p>
+                  )}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
     </div>
   );
 }
@@ -3406,7 +5761,7 @@ function WhatsAppFloat() {
       href={`https://wa.me/${WA_NUMBER}?text=${encodeURIComponent("Hola, vengo desde la web del Consultorio Holístico Cuídate Salud Plena. Quisiera información sobre sus servicios.")}`}
       target="_blank"
       rel="noreferrer"
-      className="fixed bottom-5 right-5 z-50 flex items-center gap-2.5 bg-emerald-500 hover:bg-emerald-600 text-white rounded-full shadow-xl shadow-emerald-500/30 transition-all hover:scale-105 active:scale-95 group"
+      className="fixed bottom-24 right-4 z-40 flex items-center gap-2.5 bg-emerald-500 hover:bg-emerald-600 text-white rounded-full shadow-xl shadow-emerald-500/30 transition-all hover:scale-105 active:scale-95 group"
       style={{ padding: "12px 18px 12px 14px" }}
       title="Chatear por WhatsApp"
     >
@@ -3423,6 +5778,7 @@ function WhatsAppFloat() {
   );
 }
 
+
 // ═══════════════════════════════════════════════════════
 // APP ROUTER
 // ═══════════════════════════════════════════════════════
@@ -3432,16 +5788,29 @@ export default function App() {
     <LangProvider>
       <AuthProvider>
         <BrowserRouter>
-          <div className="min-h-screen bg-background" style={{ fontFamily: "'Plus Jakarta Sans', 'DM Sans', sans-serif" }}>
+          <div
+            className="min-h-screen bg-background"
+            style={{ fontFamily: "'Plus Jakarta Sans', 'DM Sans', sans-serif" }}
+          >
             <NavBar />
             <Routes>
               <Route path="/" element={<LandingPage />} />
               <Route path="/auth" element={<AuthPage />} />
+
               <Route path="/historia" element={<PrivateRoute><HistoriaPage /></PrivateRoute>} />
               <Route path="/diagnostico" element={<PrivateRoute><DiagnosisPage /></PrivateRoute>} />
               <Route path="/tratamientos" element={<PrivateRoute><TreatmentsPage /></PrivateRoute>} />
               <Route path="/audios" element={<PrivateRoute><AudioPage /></PrivateRoute>} />
+              <Route path="/mi-historial" element={<PrivateRoute><MiHistorialPage /></PrivateRoute>} />
+              <Route path="/acompanamiento" element={<PrivateRoute><AcompanamientoPage /></PrivateRoute>} />
+
+              <Route path="/agendar-cita" element={<PrivateRoute><AgendarCitaPage /></PrivateRoute>} />
+              <Route path="/mis-citas" element={<PrivateRoute><MisCitasPage /></PrivateRoute>} />
+
               <Route path="/admin" element={<AdminRoute><AdminPage /></AdminRoute>} />
+              <Route path="/medico" element={<MedicoRoute><MedicoDashboard /></MedicoRoute>} />
+
+
               <Route path="*" element={<Navigate to="/" replace />} />
             </Routes>
             <WhatsAppFloat />

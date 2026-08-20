@@ -33,13 +33,15 @@ public class AdminController {
     private final PasswordEncoder passwordEncoder;
     private final JwtUtil jwtUtil;
 
-    // ── Guard helper ─────────────────────────────────────
+    // ── Helpers ─────────────────────────────────────────
     private boolean esAdmin(Usuario u) {
         return u != null && "ADMIN".equals(u.getRol());
     }
 
-    private ResponseEntity<ApiResponse<Void>> noAuth() {
-        return ResponseEntity.status(403).body(ApiResponse.error("Acceso denegado — se requiere rol ADMIN"));
+    /** Genérico para que compile con cualquier tipo de respuesta */
+    private <T> ResponseEntity<ApiResponse<T>> noAuth() {
+        return ResponseEntity.status(403)
+                .body(ApiResponse.error("Acceso denegado — se requiere rol ADMIN"));
     }
 
     // ════════════════════════════════════════════════════
@@ -63,7 +65,6 @@ public class AdminController {
                 .orElse(ResponseEntity.status(404).body(ApiResponse.error("Usuario no encontrado")));
     }
 
-    /** Crear usuario desde el panel admin */
     @PostMapping("/usuarios")
     public ResponseEntity<ApiResponse<Usuario>> crearUsuario(
             @RequestBody Map<String, String> body,
@@ -85,7 +86,6 @@ public class AdminController {
         return ResponseEntity.ok(ApiResponse.ok("Usuario creado", u));
     }
 
-    /** Editar nombre, rol o estado activo */
     @PutMapping("/usuarios/{id}")
     public ResponseEntity<ApiResponse<Usuario>> editarUsuario(
             @PathVariable Long id,
@@ -103,7 +103,6 @@ public class AdminController {
         }).orElse(ResponseEntity.status(404).body(ApiResponse.error("Usuario no encontrado")));
     }
 
-    /** Desactivar usuario (soft delete — no borra, solo desactiva) */
     @DeleteMapping("/usuarios/{id}")
     public ResponseEntity<ApiResponse<Void>> desactivarUsuario(
             @PathVariable Long id,
@@ -112,14 +111,14 @@ public class AdminController {
 
         return usuarioRepo.findById(id).map(u -> {
             if ("ADMIN".equals(u.getRol()))
-                return ResponseEntity.badRequest().<ApiResponse<Void>>body(ApiResponse.error("No se puede desactivar a otro ADMIN"));
+                return ResponseEntity.badRequest().<ApiResponse<Void>>body(
+                        ApiResponse.error("No se puede desactivar a otro ADMIN"));
             u.setActivo(false);
             usuarioRepo.save(u);
             return ResponseEntity.ok(ApiResponse.<Void>ok("Usuario desactivado", null));
         }).orElse(ResponseEntity.status(404).body(ApiResponse.error("Usuario no encontrado")));
     }
 
-    /** Activar usuario */
     @PutMapping("/usuarios/{id}/activar")
     public ResponseEntity<ApiResponse<Void>> activarUsuario(
             @PathVariable Long id,
@@ -133,7 +132,7 @@ public class AdminController {
     }
 
     // ════════════════════════════════════════════════════
-    // HISTORIAS CLÍNICAS — Lectura + eliminar
+    // HISTORIAS CLÍNICAS
     // ════════════════════════════════════════════════════
 
     @GetMapping("/historias")
@@ -165,7 +164,7 @@ public class AdminController {
     }
 
     // ════════════════════════════════════════════════════
-    // CONTACTOS — Lectura + cambiar estado
+    // CONTACTOS
     // ════════════════════════════════════════════════════
 
     @GetMapping("/contactos")
@@ -175,7 +174,6 @@ public class AdminController {
         return ResponseEntity.ok(ApiResponse.ok("OK", contactoRepo.findAll()));
     }
 
-    /** Cambiar estado del contacto: NUEVO → LEIDO → RESPONDIDO */
     @PutMapping("/contactos/{id}/estado")
     public ResponseEntity<ApiResponse<Contacto>> cambiarEstadoContacto(
             @PathVariable Long id,
@@ -196,8 +194,7 @@ public class AdminController {
     @GetMapping("/resumen")
     public ResponseEntity<ApiResponse<Map<String, Object>>> resumen(
             @AuthenticationPrincipal Usuario admin) {
-        if (!esAdmin(admin)) return ResponseEntity.status(403)
-                .body(ApiResponse.error("Acceso denegado"));
+        if (!esAdmin(admin)) return noAuth();
         Map<String, Object> stats = Map.of(
                 "totalUsuarios",   usuarioRepo.count(),
                 "usuariosActivos", usuarioRepo.countByActivoTrue(),
@@ -208,7 +205,6 @@ public class AdminController {
         return ResponseEntity.ok(ApiResponse.ok("OK", stats));
     }
 
-    /** Generar nuevo JWT para el admin (útil para pruebas) */
     @PostMapping("/generar-token")
     public ResponseEntity<ApiResponse<Map<String, String>>> generarToken(
             @AuthenticationPrincipal Usuario admin) {

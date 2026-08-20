@@ -4,78 +4,120 @@ import com.clinica.holistica.dto.HistoriaRequest;
 import com.clinica.holistica.entity.HistoriaClinica;
 import com.clinica.holistica.entity.Usuario;
 import com.clinica.holistica.repository.HistoriaClinicaRepository;
-import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 
 @Service
-@RequiredArgsConstructor
 public class HistoriaService {
 
     private final HistoriaClinicaRepository historiaRepo;
-    private final GeminiService geminiService;
 
+    public HistoriaService(HistoriaClinicaRepository historiaRepo) {
+        this.historiaRepo = historiaRepo;
+    }
+
+    @Transactional
     public HistoriaClinica guardarHistoria(HistoriaRequest req, Usuario usuario) {
+        if (usuario == null) {
+            throw new RuntimeException("Usuario no autenticado");
+        }
+        if (!Boolean.TRUE.equals(req.getConsentimientoAceptado())) {
+            throw new RuntimeException("Debe aceptar el consentimiento informado");
+        }
+
         Map<String, String> r = req.getRespuestas();
+        if (r == null || r.isEmpty()) {
+            throw new RuntimeException("No se recibieron respuestas de la historia clínica");
+        }
+
         HistoriaClinica h = new HistoriaClinica();
-
         h.setUsuario(usuario);
-        h.setNombre(r.get("nombre"));
-        h.setEdad(r.get("edad"));
-        h.setGenero(r.get("genero"));
-        h.setCiudad(r.get("ciudad"));
-        h.setMotivoConsulta(r.get("motivo_consulta"));
-        h.setSustancias(r.get("sustancias"));
-        h.setEdadInicio(r.get("edad_inicio"));
-        h.setSustanciaPrincipal(r.get("sustancia_principal"));
-        h.setFrecuencia(r.get("frecuencia"));
-        h.setUltimoConsumo(r.get("ultimo_consumo"));
 
-        String escala = r.get("abstinencia_escala");
-        if (escala != null && !escala.isBlank()) {
-            try { h.setAbstinenciaEscala(Integer.parseInt(escala)); } catch (NumberFormatException ignored) {}
+        // Identificación
+        h.setNombre(val(r, "nombre"));
+        h.setEdad(val(r, "edad"));
+        h.setGenero(val(r, "genero"));
+        h.setCiudad(val(r, "ciudad"));
+
+        // Motivo
+        h.setMotivoConsulta(val(r, "motivo_consulta"));
+
+        // Consumo
+        h.setSustancias(val(r, "sustancias"));
+        h.setEdadInicio(val(r, "edad_inicio"));
+        h.setSustanciaPrincipal(val(r, "sustancia_principal"));
+        h.setFrecuencia(val(r, "frecuencia"));
+        h.setUltimoConsumo(val(r, "ultimo_consumo"));
+
+        // Escalas (craving / deseo + abstinencia)
+        String craving = val(r, "craving");
+        if (craving == null || craving.isBlank()) {
+            craving = val(r, "deseo_consumir");
         }
+        h.setDeseoConsumir(craving);
+        h.setAbstinenciaEscala(val(r, "abstinencia_escala"));
 
-        h.setAtencionPsicologica(r.get("atencion_psicologica"));
-        h.setAtencionPsiquiatrica(r.get("atencion_psiquiatrica"));
-        h.setDiagnosticos(r.get("diagnosticos"));
-        h.setMedicamentos(r.get("medicamentos"));
-        h.setIdeacion(r.get("ideacion"));
-        h.setEnfermedades(r.get("enfermedades"));
-        h.setAntecedentesFamiliares(r.get("antecedentes_familiares"));
-        h.setCuantosFamiliares(r.get("cuantos_familiares"));
-        h.setCualesFamiliares(r.get("cuales_familiares"));
-        h.setSituacionLaboral(r.get("situacion_laboral"));
-        h.setRedApoyo(r.get("red_apoyo"));
-        h.setMotivacion(r.get("motivacion"));
-        h.setExpectativas(r.get("expectativas"));
-        h.setConsentimientoAceptado(req.getConsentimientoAceptado());
+        // Salud mental
+        h.setAtencionPsicologica(val(r, "atencion_psicologica"));
+        h.setAtencionPsiquiatrica(val(r, "atencion_psiquiatrica"));
+        h.setDiagnosticos(val(r, "diagnosticos"));
+        h.setEnfermedades(val(r, "enfermedades"));
 
-        if (Boolean.TRUE.equals(req.getConsentimientoAceptado())) {
-            h.setConsentimientoFecha(LocalDateTime.now());
-        }
+        // Familia
+        h.setAntecedentesFamiliares(val(r, "antecedentes_familiares"));
+        h.setCuantosFamiliares(val(r, "cuantos_familiares"));
+        h.setCualesFamiliares(val(r, "cuales_familiares"));
+
+        // Cierre / social
+        h.setSituacionLaboral(val(r, "situacion_laboral"));
+        h.setRedApoyo(val(r, "red_apoyo"));
+        h.setMotivacion(val(r, "motivacion"));
+        h.setExpectativas(val(r, "expectativas"));
+
+        // Consentimiento
+        h.setConsentimientoAceptado(true);
+        h.setConsentimientoFecha(LocalDateTime.now());
 
         return historiaRepo.save(h);
     }
 
-    public HistoriaClinica guardarDiagnosticoIa(Long historiaId, String diagnosticoJson,
-                                                 String nivelRiesgo, String programaRecomendado) {
+    @Transactional
+    public void guardarDiagnosticoIa(
+            Long historiaId,
+            String diagnosticoJson,
+            String nivelRiesgo,
+            String programaRecomendado
+    ) {
         HistoriaClinica h = historiaRepo.findById(historiaId)
                 .orElseThrow(() -> new RuntimeException("Historia no encontrada"));
         h.setDiagnosticoIa(diagnosticoJson);
         h.setNivelRiesgo(nivelRiesgo);
         h.setProgramaRecomendado(programaRecomendado);
-        return historiaRepo.save(h);
+        historiaRepo.save(h);
     }
 
     public List<HistoriaClinica> obtenerPorUsuario(Long usuarioId) {
-        return historiaRepo.findByUsuarioId(usuarioId);
+        return historiaRepo.findByUsuarioIdOrderByIdDesc(usuarioId);
     }
 
     public List<HistoriaClinica> obtenerTodas() {
-        return historiaRepo.findAll();
+        return historiaRepo.findAllByOrderByIdDesc();
+    }
+
+    public HistoriaClinica obtenerPorId(Long id) {
+        return historiaRepo.findById(id)
+                .orElseThrow(() -> new RuntimeException("Historia no encontrada"));
+    }
+
+    private static String val(Map<String, String> r, String key) {
+        if (r == null) {
+            return null;
+        }
+        String v = r.get(key);
+        return v != null ? v.trim() : null;
     }
 }
