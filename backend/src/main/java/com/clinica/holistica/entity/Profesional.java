@@ -12,6 +12,7 @@ import java.time.LocalDateTime;
 @Table(name = "profesionales")
 public class Profesional {
 
+    // getters / setters (getMeetLink / setMeetLink — NO meetLinkBase)
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
@@ -26,13 +27,13 @@ public class Profesional {
     private String telefono;
 
     @Column(length = 80)
-    private String especialidad; // PSICOLOGO, PSIQUIATRA, MEDICO, HOLISTICO
+    private String especialidad;
 
-    @Column(length = 500)
+    @Column(name = "meet_link", length = 500)
     private String meetLink;
 
     @Column(length = 30)
-    private String modalidad = "VIRTUAL"; // VIRTUAL | PRESENCIAL | HIBRIDO
+    private String modalidad = "VIRTUAL";
 
     private Boolean activo = true;
 

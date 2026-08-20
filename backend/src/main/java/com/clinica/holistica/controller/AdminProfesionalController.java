@@ -3,6 +3,7 @@ package com.clinica.holistica.controller;
 import com.clinica.holistica.dto.ApiResponse;
 import com.clinica.holistica.dto.ProfesionalRequest;
 import com.clinica.holistica.entity.Profesional;
+import com.clinica.holistica.service.CitaService;
 import com.clinica.holistica.service.ProfesionalService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -53,5 +54,9 @@ public class AdminProfesionalController {
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(ApiResponse.error(e.getMessage()));
         }
+    }
+    @GetMapping("/api/citas/profesionales")
+    public ResponseEntity<?> profesionales() {
+        return ResponseEntity.ok(ApiResponse.ok(profesionalService.listarProfesionales()));
     }
 }

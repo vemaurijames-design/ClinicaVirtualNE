@@ -37,7 +37,8 @@ public class CitaController {
             ));
         } catch (Exception e) {
             return ResponseEntity.badRequest()
-                    .body(ApiResponse.error(e.getMessage() != null ? e.getMessage() : "Error al agendar"));
+                    .body(ApiResponse.error(
+                            e.getMessage() != null ? e.getMessage() : "Error al agendar"));
         }
     }
 
@@ -48,7 +49,8 @@ public class CitaController {
             return ResponseEntity.ok(ApiResponse.ok(citaService.mias(paciente.getId())));
         } catch (Exception e) {
             return ResponseEntity.badRequest()
-                    .body(ApiResponse.error(e.getMessage() != null ? e.getMessage() : "Error"));
+                    .body(ApiResponse.error(
+                            e.getMessage() != null ? e.getMessage() : "Error"));
         }
     }
 
@@ -63,7 +65,7 @@ public class CitaController {
             return u;
         }
 
-        String email = null;
+        String email;
         if (principal instanceof UserDetails ud) {
             email = ud.getUsername();
         } else if (principal instanceof String s) {
@@ -76,7 +78,6 @@ public class CitaController {
             throw new RuntimeException("No se pudo identificar al usuario");
         }
 
-        // Si tu método se llama findByCorreo, cámbialo aquí
         String finalEmail = email;
         return usuarioRepository.findByEmail(email)
                 .orElseThrow(() -> new RuntimeException("Usuario no encontrado: " + finalEmail));

@@ -1,5 +1,6 @@
 package com.clinica.holistica.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
@@ -10,6 +11,7 @@ import java.time.LocalDateTime;
 @Getter
 @Entity
 @Table(name = "citas")
+@JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
 public class Cita {
 
     @Id
@@ -20,16 +22,15 @@ public class Cita {
     @JoinColumn(name = "paciente_id", nullable = false)
     private Usuario paciente;
 
-    /** Profesional real de la tabla profesionales (NO usuarios) */
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "profesional_id")
     private Profesional profesional;
 
     @Column(length = 30, nullable = false)
-    private String modalidad; // VIRTUAL_REAL | APOYO_IA
+    private String modalidad;
 
     @Column(length = 30)
-    private String tipo; // CONSULTA, SEGUIMIENTO, etc.
+    private String tipo;
 
     private LocalDateTime fechaHora;
 
@@ -40,10 +41,8 @@ public class Cita {
     private String notasPaciente;
 
     @Column(length = 30)
-    private String estado = "PENDIENTE"; // PENDIENTE | CONFIRMADA | CANCELADA
+    private String estado = "PENDIENTE";
 
     private LocalDateTime creadoEn = LocalDateTime.now();
-
-    // ── Getters / Setters ──
 
 }

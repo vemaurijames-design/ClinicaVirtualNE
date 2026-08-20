@@ -1,64 +1,41 @@
 package com.clinica.holistica.controller;
 
 import com.clinica.holistica.dto.ApiResponse;
+import com.clinica.holistica.dto.PagoRequest;
+import com.clinica.holistica.entity.Pago;
 import com.clinica.holistica.entity.Usuario;
 import com.clinica.holistica.service.PagoService;
-import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
-
-import java.util.Map;
 
 @RestController
 @RequestMapping("/api/pagos")
-@RequiredArgsConstructor
 public class PagoController {
 
     private final PagoService pagoService;
 
-    @PostMapping("/crear")
-    public ResponseEntity<ApiResponse<Map<String, Object>>> crear(
-            @RequestBody Map<String, String> body,
-            @AuthenticationPrincipal Usuario usuario) {
-        if (usuario == null) {
-            return ResponseEntity.status(401).body(ApiResponse.error("Debe iniciar sesión"));
-        }
-        String programa = body.get("programa");
-        Map<String, Object> data = pagoService.crearPago(usuario, programa);
-        return ResponseEntity.ok(ApiResponse.ok("Pago creado", data));
+    public PagoController(PagoService pagoService) {
+        this.pagoService = pagoService;
     }
 
-    /**
-     * Webhook Wompi — configura esta URL en el dashboard de Wompi:
-     * En local puedes usar ngrok.
-     */
-    @PostMapping("/webhook")
-    public ResponseEntity<String> webhook(@RequestBody Map<String, Object> payload) {
+    @PostMapping
+    public ResponseEntity<?> crear(@RequestBody PagoRequest req, Authentication auth) {
         try {
-            // Estructura simplificada; adapta a la payload real de Wompi
-            @SuppressWarnings("unchecked")
-            Map<String, Object> data = (Map<String, Object>) payload.get("data");
-            @SuppressWarnings("unchecked")
-            Map<String, Object> transaction = data != null ? (Map<String, Object>) data.get("transaction") : null;
-
-            if (transaction == null) return ResponseEntity.ok("ignored");
-
-            String status = String.valueOf(transaction.get("status"));
-            String reference = String.valueOf(transaction.get("reference"));
-            String txId = String.valueOf(transaction.get("id"));
-
-            if ("APPROVED".equalsIgnoreCase(status)) {
-                pagoService.confirmarPagoAprobado(reference, txId);
+            if (auth == null || auth.getPrincipal() == null) {
+                return ResponseEntity.status(401).body(ApiResponse.error("Debe iniciar sesión"));
             }
-            return ResponseEntity.ok("ok");
+            Usuario u = (Usuario) auth.getPrincipal();
+            Pago pago = pagoService.crearYActivarDemo(req, u);
+            return ResponseEntity.ok(ApiResponse.ok("Pago registrado y plan activado", pago));
         } catch (Exception e) {
-            return ResponseEntity.ok("error-logged");
+            return ResponseEntity.badRequest().body(ApiResponse.error(e.getMessage()));
         }
     }
 
-
-
-
-
+    @GetMapping("/mios")
+    public ResponseEntity<?> mios(Authentication auth) {
+        Usuario u = (Usuario) auth.getPrincipal();
+        return ResponseEntity.ok(ApiResponse.ok(pagoService.misPagos(u.getId())));
+    }
 }

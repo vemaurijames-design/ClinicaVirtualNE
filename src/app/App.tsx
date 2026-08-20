@@ -4844,6 +4844,114 @@ function MedicoRoute({ children }: { children: React.ReactNode }) {
   return <>{children}</>;
 }
 
+function AdminProfesionalesSection() {
+  const API = (import.meta.env.VITE_API_URL as string) || "http://localhost:8080";
+  const jwt = localStorage.getItem("ch_jwt") || "";
+  const [list, setList] = useState<any[]>([]);
+  const [form, setForm] = useState({
+    nombre: "",
+    email: "",
+    telefono: "",
+    especialidad: "PSICOLOGO",
+    meetLink: "",
+    modalidad: "VIRTUAL",
+  });
+  const [msg, setMsg] = useState("");
+  const [err, setErr] = useState("");
+
+  const headers = {
+    "Content-Type": "application/json",
+    Authorization: `Bearer ${jwt}`,
+  };
+
+  const load = () => {
+    fetch(`${API}/api/admin/profesionales`, { headers })
+      .then((r) => r.json())
+      .then((j) => setList(Array.isArray(j.data) ? j.data : []))
+      .catch(() => setList([]));
+  };
+
+  useEffect(() => { load(); }, []);
+
+  async function crear(e: React.FormEvent) {
+    e.preventDefault();
+    setMsg(""); setErr("");
+    try {
+      const r = await fetch(`${API}/api/admin/profesionales`, {
+        method: "POST",
+        headers,
+        body: JSON.stringify(form),
+      });
+      const j = await r.json();
+      if (!r.ok) throw new Error(j.message || "Error al crear");
+      setMsg("Profesional guardado en la base de datos");
+      setForm({ nombre: "", email: "", telefono: "", especialidad: "PSICOLOGO", meetLink: "", modalidad: "VIRTUAL" });
+      load();
+    } catch (ex: any) {
+      setErr(ex.message || "Error");
+    }
+  }
+
+  async function desactivar(id: number) {
+    await fetch(`${API}/api/admin/profesionales/${id}`, { method: "DELETE", headers });
+    load();
+  }
+
+  return (
+    <div className="space-y-4">
+      <h2 className="font-semibold">Profesionales de salud</h2>
+      <form onSubmit={crear} className="grid gap-2 md:grid-cols-2 bg-card border border-border rounded-2xl p-4">
+        <input required placeholder="Nombre" value={form.nombre}
+          onChange={(e) => setForm({ ...form, nombre: e.target.value })}
+          className="bg-muted/40 border border-border rounded-xl px-3 py-2 text-sm" />
+        <input required type="email" placeholder="Email (notificaciones de cita)" value={form.email}
+          onChange={(e) => setForm({ ...form, email: e.target.value })}
+          className="bg-muted/40 border border-border rounded-xl px-3 py-2 text-sm" />
+        <input placeholder="Teléfono" value={form.telefono}
+          onChange={(e) => setForm({ ...form, telefono: e.target.value })}
+          className="bg-muted/40 border border-border rounded-xl px-3 py-2 text-sm" />
+        <select value={form.especialidad}
+          onChange={(e) => setForm({ ...form, especialidad: e.target.value })}
+          className="bg-muted/40 border border-border rounded-xl px-3 py-2 text-sm">
+          <option value="PSICOLOGO">Psicólogo</option>
+          <option value="PSIQUIATRA">Psiquiatra</option>
+          <option value="MEDICO">Médico</option>
+          <option value="HOLISTICO">Médico holístico</option>
+        </select>
+        <input placeholder="Link Teams o Meet[](https://...)" value={form.meetLink}
+          onChange={(e) => setForm({ ...form, meetLink: e.target.value })}
+          className="md:col-span-2 bg-muted/40 border border-border rounded-xl px-3 py-2 text-sm" />
+        <button type="submit" className="md:col-span-2 py-2.5 rounded-xl text-sm font-semibold"
+          style={{ background: "linear-gradient(135deg, #0ccec6, #07a8a2)", color: "#031014" }}>
+          Guardar profesional
+        </button>
+      </form>
+      {msg && <p className="text-sm text-emerald-400">{msg}</p>}
+      {err && <p className="text-sm text-red-400">{err}</p>}
+
+      <div className="space-y-2">
+        {list.map((p) => (
+          <div key={p.id} className="flex items-center justify-between gap-2 border border-border rounded-xl p-3 text-sm">
+            <div>
+              <p className="font-medium">{p.nombre} · {p.especialidad}</p>
+              <p className="text-xs text-muted-foreground">{p.email}</p>
+              {p.meetLink && (
+                <a href={p.meetLink} target="_blank" rel="noreferrer" className="text-xs text-primary">
+                  Link reunión
+                </a>
+              )}
+              {p.activo === false && <span className="text-xs text-amber-400"> Inactivo</span>}
+            </div>
+            <button type="button" onClick={() => desactivar(p.id)} className="text-xs text-red-400">
+              Desactivar
+            </button>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 function MedicoDashboard() {
   const API = (import.meta.env.VITE_API_URL as string) || "http://localhost:8080";
   const jwt = localStorage.getItem("ch_jwt") || "";
@@ -5161,9 +5269,6 @@ function AcompanamientoPage() {
     setMsgs((m) => [...m, { role: "user", text: mensaje }]);
     setLoading(true);
 
-    const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), 45000);
-
     try {
       const jwt = localStorage.getItem("ch_jwt") || "";
       const r = await fetch(`${API}/api/chat/acompanamiento`, {
@@ -5173,24 +5278,32 @@ function AcompanamientoPage() {
           Authorization: `Bearer ${jwt}`,
         },
         body: JSON.stringify({ mensaje }),
-        signal: controller.signal,
       });
       const j = await r.json();
+
+      if (r.status === 402 || j?.data?.requierePago) {
+        setMsgs((m) => [
+          ...m,
+          {
+            role: "bot",
+            text:
+              j.message ||
+              "Has llegado al límite de mensajes gratuitos. Activa el Programa Mes 1 para seguir conversando y poder agendar tu consulta.",
+          },
+        ]);
+        setBlocked(true); // state boolean
+        return;
+      }
+
       if (!r.ok) throw new Error(j.message || "No se pudo responder");
+
       setMsgs((m) => [
         ...m,
         { role: "bot", text: j.data?.respuesta || "Estoy aquí para escucharle." },
       ]);
     } catch (e: any) {
-      const msg =
-        e?.name === "AbortError"
-          ? "La respuesta está tardando demasiado. Intente de nuevo en unos segundos."
-          : e?.message?.includes("503") || e?.message?.includes("UNAVAILABLE")
-          ? "El servicio de IA está saturado temporalmente. Espere un momento e intente otra vez."
-          : e?.message || "Error de conexión. Intente de nuevo.";
-      setMsgs((m) => [...m, { role: "bot", text: msg }]);
+      setMsgs((m) => [...m, { role: "bot", text: e.message || "Error de conexión" }]);
     } finally {
-      clearTimeout(timer);
       setLoading(false);
     }
   }
@@ -5435,9 +5548,9 @@ function AgendarCitaPage() {
   /** datetime-local → formato que acepta Java LocalDateTime (sin Z ni ms) */
   function toLocalDateTime(value: string): string | null {
     if (!value) return null;
-    // "2026-08-19T10:23" → "2026-08-19T10:23:00"
-    if (/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/.test(value)) {
-      return value + ":00";
+      if (/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/.test(value)) return value + ":00";
+      return value.replace(/\.\d{3}Z?$/i, "").replace(/Z$/i, "").slice(0, 19);
+    {
     }
     // limpia ms / Z si vinieran
     return value

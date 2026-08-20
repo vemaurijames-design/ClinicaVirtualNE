@@ -1,9 +1,10 @@
+com\clinica\holistica\dto\PagoRequest.class
 com\clinica\holistica\entity\Contacto.class
 com\clinica\holistica\controller\AdminPlanController.class
-com\clinica\holistica\repository\PagoRepository$PreciosPrograma.class
 com\clinica\holistica\service\GeminiService.class
 com\clinica\holistica\entity\ObservacionMedica.class
 com\clinica\holistica\controller\MedicoController.class
+com\clinica\holistica\dto\CitaResponse.class
 com\clinica\holistica\dto\RegisterRequest.class
 com\clinica\holistica\config\GlobalExceptionHandler.class
 com\clinica\holistica\service\AuthService.class

@@ -1,6 +1,5 @@
 package com.clinica.holistica.entity;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
@@ -18,13 +17,12 @@ public class Pago {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @JsonIgnore
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "usuario_id", nullable = false)
     private Usuario usuario;
 
     @Column(length = 50, nullable = false)
-    private String programa;
+    private String programa; // mes1, mes2, mes3, mes4
 
     @Column(nullable = false, precision = 12, scale = 2)
     private BigDecimal monto;
@@ -39,14 +37,10 @@ public class Pago {
     private String wompiTransactionId;
 
     @Column(length = 30)
-    private String estado = "PENDIENTE";
+    private String estado = "PENDIENTE"; // PENDIENTE | APROBADO | RECHAZADO
 
     private LocalDateTime creadoEn = LocalDateTime.now();
-
     private LocalDateTime pagadoEn;
-
     private LocalDateTime activadoHasta;
-
-    public Pago() {}
 
 }

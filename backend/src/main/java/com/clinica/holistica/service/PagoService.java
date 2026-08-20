@@ -1,112 +1,74 @@
 package com.clinica.holistica.service;
 
+import com.clinica.holistica.dto.PagoRequest;
 import com.clinica.holistica.entity.Pago;
 import com.clinica.holistica.entity.Usuario;
 import com.clinica.holistica.repository.PagoRepository;
 import com.clinica.holistica.repository.UsuarioRepository;
-import lombok.RequiredArgsConstructor;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import javax.crypto.Mac;
-import javax.crypto.spec.SecretKeySpec;
 import java.math.BigDecimal;
-import java.nio.charset.StandardCharsets;
-import java.security.MessageDigest;
 import java.time.LocalDateTime;
-import java.util.HexFormat;
-import java.util.Map;
+import java.util.List;
 import java.util.UUID;
 
 @Service
-@RequiredArgsConstructor
 public class PagoService {
 
     private final PagoRepository pagoRepo;
     private final UsuarioRepository usuarioRepo;
 
-    @Value("${wompi.public-key}")
-    private String publicKey;
-
-    @Value("${wompi.integrity-secret}")
-    private String integritySecret;
-
-    // Precios en centavos COP (Wompi usa centavos)
-    private static final Map<String, Long> PRECIOS_CENTAVOS = Map.of(
-            "mes1", 35000000L,  // $350.000
-            "mes2", 65000000L,
-            "mes3", 90000000L,
-            "mes4", 110000000L
-    );
-
-    public Map<String, Object> crearPago(Usuario usuario, String programa) {
-        if (!PRECIOS_CENTAVOS.containsKey(programa)) {
-            throw new RuntimeException("Programa inválido");
-        }
-        long amountInCents = PRECIOS_CENTAVOS.get(programa);
-        String reference = "CH-" + usuario.getId() + "-" + UUID.randomUUID().toString().substring(0, 8);
-
-        Pago pago = new Pago();
-        pago.setUsuario(usuario);
-        pago.setPrograma(programa);
-        pago.setMonto(BigDecimal.valueOf(amountInCents).movePointLeft(2));
-        pago.setMoneda("COP");
-        pago.setReferencia(reference);
-        pago.setEstado("PENDIENTE");
-        pagoRepo.save(pago);
-
-        // Firma integrity: reference + amountInCents + currency + integritySecret
-        String cadena = reference + amountInCents + "COP" + integritySecret;
-        String signature = sha256(cadena);
-
-        return Map.of(
-                "publicKey", publicKey,
-                "currency", "COP",
-                "amountInCents", amountInCents,
-                "reference", reference,
-                "signature", signature,
-                "programa", programa,
-                "pagoId", pago.getId()
-        );
+    public PagoService(PagoRepository pagoRepo, UsuarioRepository usuarioRepo) {
+        this.pagoRepo = pagoRepo;
+        this.usuarioRepo = usuarioRepo;
     }
 
     @Transactional
-    public void confirmarPagoAprobado(String reference, String wompiTxId) {
-        Pago pago = pagoRepo.findByReferencia(reference)
-                .orElseThrow(() -> new RuntimeException("Pago no encontrado"));
+    public Pago crearYActivarDemo(PagoRequest req, Usuario usuario) {
+        if (usuario == null) {
+            throw new RuntimeException("Debe iniciar sesión");
+        }
+        if (req.getPrograma() == null || req.getPrograma().isBlank()) {
+            throw new RuntimeException("Indique el programa (mes1, mes2, ...)");
+        }
 
-        if ("APROBADO".equals(pago.getEstado())) return; // idempotente
+        BigDecimal monto = req.getMonto() != null ? req.getMonto() : BigDecimal.valueOf(350000);
+        int dias = diasPorPrograma(req.getPrograma());
 
+        Pago pago = new Pago();
+        pago.setUsuario(usuario);
+        pago.setPrograma(req.getPrograma().toLowerCase());
+        pago.setMonto(monto);
+        pago.setMoneda(req.getMoneda() != null ? req.getMoneda() : "COP");
+        pago.setReferencia("DEMO-" + UUID.randomUUID().toString().substring(0, 8).toUpperCase());
         pago.setEstado("APROBADO");
-        pago.setWompiTransactionId(wompiTxId);
+        pago.setCreadoEn(LocalDateTime.now());
         pago.setPagadoEn(LocalDateTime.now());
+        pago.setActivadoHasta(LocalDateTime.now().plusDays(dias));
+        pago = pagoRepo.save(pago);
 
-        LocalDateTime hasta = LocalDateTime.now().plusDays(30);
-        pago.setActivadoHasta(hasta);
-        pagoRepo.save(pago);
-
-        Usuario u = pago.getUsuario();
-        String programa = "";
-        u.setPlanActivo(programa);
+        // Activar plan en el usuario
+        Usuario u = usuarioRepo.findById(usuario.getId())
+                .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
         u.setPlanActivo(pago.getPrograma());
         u.setPlanActivoDesde(LocalDateTime.now());
         u.setPlanActivoHasta(pago.getActivadoHasta());
-
         usuarioRepo.save(u);
+
+        return pago;
     }
 
-    private String sha256(String data) {
-        try {
-            Mac mac = Mac.getInstance("HmacSHA256");
-            mac.init(new SecretKeySpec(integritySecret.getBytes(StandardCharsets.UTF_8), "HmacSHA256"));
-            // Wompi usa SHA256 simple de la cadena (no HMAC) en integrity — según docs:
-            // reference + amountInCents + currency + integritySecret → SHA256
-            MessageDigest md = MessageDigest.getInstance("SHA-256");
-            byte[] hash = md.digest(data.getBytes(StandardCharsets.UTF_8));
-            return HexFormat.of().formatHex(hash);
-        } catch (Exception e) {
-            throw new RuntimeException("Error firmando pago", e);
-        }
+    public List<Pago> misPagos(Long usuarioId) {
+        return pagoRepo.findByUsuarioIdOrderByCreadoEnDesc(usuarioId);
+    }
+
+    private int diasPorPrograma(String p) {
+        return switch (p.toLowerCase()) {
+            case "mes2" -> 60;
+            case "mes3" -> 90;
+            case "mes4" -> 120;
+            default -> 30; // mes1
+        };
     }
 }

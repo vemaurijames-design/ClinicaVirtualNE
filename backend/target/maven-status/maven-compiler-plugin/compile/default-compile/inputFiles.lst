@@ -9,6 +9,7 @@ D:\4. BACKUSP CLINISIGN ACT\CLINICAVIRTUALNE\backend\src\main\java\com\clinica\h
 D:\4. BACKUSP CLINISIGN ACT\CLINICAVIRTUALNE\backend\src\main\java\com\clinica\holistica\controller\CitaController.java
 D:\4. BACKUSP CLINISIGN ACT\CLINICAVIRTUALNE\backend\src\main\java\com\clinica\holistica\entity\HistoriaClinica.java
 D:\4. BACKUSP CLINISIGN ACT\CLINICAVIRTUALNE\backend\src\main\java\com\clinica\holistica\security\JwtUtil.java
+D:\4. BACKUSP CLINISIGN ACT\CLINICAVIRTUALNE\backend\src\main\java\com\clinica\holistica\dto\CitaResponse.java
 D:\4. BACKUSP CLINISIGN ACT\CLINICAVIRTUALNE\backend\src\main\java\com\clinica\holistica\service\CitaMailService.java
 D:\4. BACKUSP CLINISIGN ACT\CLINICAVIRTUALNE\backend\src\main\java\com\clinica\holistica\dto\HistoriaRequest.java
 D:\4. BACKUSP CLINISIGN ACT\CLINICAVIRTUALNE\backend\src\main\java\com\clinica\holistica\repository\CitaRepository.java
@@ -47,6 +48,7 @@ D:\4. BACKUSP CLINISIGN ACT\CLINICAVIRTUALNE\backend\src\main\java\com\clinica\h
 D:\4. BACKUSP CLINISIGN ACT\CLINICAVIRTUALNE\backend\src\main\java\com\clinica\holistica\service\CitaService.java
 D:\4. BACKUSP CLINISIGN ACT\CLINICAVIRTUALNE\backend\src\main\java\com\clinica\holistica\controller\AuthController.java
 D:\4. BACKUSP CLINISIGN ACT\CLINICAVIRTUALNE\backend\src\main\java\com\clinica\holistica\repository\HistoriaClinicaRepository.java
+D:\4. BACKUSP CLINISIGN ACT\CLINICAVIRTUALNE\backend\src\main\java\com\clinica\holistica\dto\PagoRequest.java
 D:\4. BACKUSP CLINISIGN ACT\CLINICAVIRTUALNE\backend\src\main\java\com\clinica\holistica\dto\ApiResponse.java
 D:\4. BACKUSP CLINISIGN ACT\CLINICAVIRTUALNE\backend\src\main\java\com\clinica\holistica\service\ContactoService.java
 D:\4. BACKUSP CLINISIGN ACT\CLINICAVIRTUALNE\backend\src\main\java\com\clinica\holistica\service\AcompanamientoService.java

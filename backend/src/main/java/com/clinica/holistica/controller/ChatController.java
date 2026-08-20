@@ -1,79 +1,83 @@
 package com.clinica.holistica.controller;
 
 import com.clinica.holistica.dto.ApiResponse;
-import com.clinica.holistica.entity.HistoriaClinica;
 import com.clinica.holistica.entity.Usuario;
 import com.clinica.holistica.repository.UsuarioRepository;
-import com.clinica.holistica.service.AcompanamientoService;
-import com.clinica.holistica.service.HistoriaService;
+import com.clinica.holistica.service.GeminiService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.HashMap;
-import java.util.List;
+import java.time.LocalDateTime;
 import java.util.Map;
 
 @RestController
 @RequestMapping("/api/chat")
 public class ChatController {
 
-    private final AcompanamientoService acompanamientoService;
-    private final HistoriaService historiaService;
+    private final GeminiService geminiService;
     private final UsuarioRepository usuarioRepo;
+    private static final int GRATIS = 6;
 
-    public ChatController(
-            AcompanamientoService acompanamientoService,
-            HistoriaService historiaService,
-            UsuarioRepository usuarioRepo
-    ) {
-        this.acompanamientoService = acompanamientoService;
-        this.historiaService = historiaService;
+    public ChatController(GeminiService geminiService, UsuarioRepository usuarioRepo) {
+        this.geminiService = geminiService;
         this.usuarioRepo = usuarioRepo;
     }
 
     @PostMapping("/acompanamiento")
-    public ResponseEntity<ApiResponse<Map<String, String>>> chat(
-            @RequestBody Map<String, String> body,
-            Authentication auth
-    ) {
-        Usuario usuario = usuarioActual(auth);
-        String mensaje = body.getOrDefault("mensaje", "").trim();
-
-        if (mensaje.isBlank()) {
-            return ResponseEntity.badRequest()
-                    .body(ApiResponse.error("Mensaje vacío"));
+    public ResponseEntity<?> acompanamiento(@RequestBody Map<String, String> body,
+                                            Authentication auth) {
+        if (auth == null || auth.getPrincipal() == null) {
+            return ResponseEntity.status(401).body(ApiResponse.error("Debe iniciar sesión"));
         }
 
-        List<HistoriaClinica> historias = historiaService.obtenerPorUsuario(usuario.getId());
-        if (historias.isEmpty()) {
-            return ResponseEntity.badRequest()
-                    .body(ApiResponse.error("Debe completar primero la historia clínica"));
+        Usuario u = (Usuario) auth.getPrincipal();
+        u = usuarioRepo.findById(u.getId()).orElse(u);
+
+        int usados = u.getMensajesIaUsados();
+        boolean tienePlan = u.getPlanActivo() != null
+                && !u.getPlanActivo().isBlank()
+                && (u.getPlanActivoHasta() == null
+                || u.getPlanActivoHasta().isAfter(LocalDateTime.now()));
+
+        if (usados >= GRATIS && !tienePlan) {
+            return ResponseEntity.status(402).body(ApiResponse.error(
+                    "Has usado tus mensajes gratuitos. Activa el Programa Mes 1 para continuar."
+            ));
         }
 
-        HistoriaClinica ultima = historias.get(0);
-        String respuesta = acompanamientoService.responder(
-                usuario.getNombre(),
-                ultima.getDiagnosticoIa(),
-                ultima.getNivelRiesgo(),
-                ultima.getProgramaRecomendado(),
-                mensaje
-        );
+        String mensaje = body.get("mensaje");
+        if (mensaje == null || mensaje.isBlank()) {
+            return ResponseEntity.badRequest().body(ApiResponse.error("Mensaje vacío"));
+        }
 
-        Map<String, String> data = new HashMap<>();
-        data.put("respuesta", respuesta);
-        return ResponseEntity.ok(ApiResponse.ok("OK", data));
+        String respuesta = geminiService.generarTextoLibre(construirPromptAcompanamiento(u, mensaje));
+
+        u.setMensajesIaUsados(usados + 1);
+        usuarioRepo.save(u);
+
+        return ResponseEntity.ok(ApiResponse.ok(Map.of(
+                "respuesta", respuesta,
+                "mensajesUsados", u.getMensajesIaUsados(),
+                "limiteGratis", GRATIS,
+                "tienePlan", tienePlan,
+                "requierePago", !tienePlan && u.getMensajesIaUsados() >= GRATIS
+        )));
     }
 
-    private Usuario usuarioActual(Authentication auth) {
-        if (auth == null || auth.getName() == null) {
-            throw new RuntimeException("No autenticado");
-        }
-        Object p = auth.getPrincipal();
-        if (p instanceof Usuario u) {
-            return u;
-        }
-        return usuarioRepo.findByEmail(auth.getName())
-                .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
+    private String construirPromptAcompanamiento(Usuario u, String mensaje) {
+        String nombre = u.getNombre() != null ? u.getNombre().split(" ")[0] : "paciente";
+        return """
+            Eres un profesional de salud mental de la Clínica Virtual (Consultorio Holístico, Colombia).
+            Escuchas con empatía temas de adicciones, ansiedad y estrés.
+            No digas en cada mensaje que eres una IA. Sé cálido y breve.
+            Si es natural, orienta al Programa Mes 1 y a agendar consulta.
+            Emergencia: Línea de la Vida 800-911-2000 o 123.
+
+            Paciente: %s
+            Mensaje: %s
+
+            Responde en español, 2 a 5 oraciones.
+            """.formatted(nombre, mensaje);
     }
 }
