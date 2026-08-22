@@ -104,13 +104,14 @@ public class HistoriaService {
         return historiaRepo.findByUsuarioIdOrderByIdDesc(usuarioId);
     }
 
-    public List<HistoriaClinica> obtenerTodas() {
-        return historiaRepo.findAllByOrderByIdDesc();
-    }
 
     public HistoriaClinica obtenerPorId(Long id) {
         return historiaRepo.findById(id)
+
                 .orElseThrow(() -> new RuntimeException("Historia no encontrada"));
+    }
+    public List<HistoriaClinica> obtenerTodas() {
+        return historiaRepo.findAllByOrderByIdDesc();
     }
 
     private static String val(Map<String, String> r, String key) {

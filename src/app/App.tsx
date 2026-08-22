@@ -571,7 +571,6 @@ const BONUS_MONTHS = {
 // plans → desbloquea desde ese mes en adelante
 // ═══════════════════════════════════════════════════════
 
-type PlanId = "mes1" | "mes2" | "mes3" | "mes4";
 
 function puedeReproducir(
   item: { free: boolean; plans: PlanId[] },
@@ -579,15 +578,28 @@ function puedeReproducir(
 ): boolean {
   if (item.free) return true;
   if (!planActivo) return false;
-  return item.plans.includes(planActivo);
+  // Mes 4 = programa completo → todo el contenido de plan
+  if (planActivo === "mes4") return true;
+  // Mes superior desbloquea lo de meses anteriores
+  const orden: PlanId[] = ["mes1", "mes2", "mes3", "mes4"];
+  const idx = orden.indexOf(planActivo);
+  return item.plans.some((pl) => orden.indexOf(pl) <= idx);
 }
 
 /** Lee plan guardado tras pago (ajusta la clave si ya usas otra) */
+/** Plan para audios/videos: primero API (vía cache), si no localStorage */
 function getPlanActivo(): PlanId | null {
   const p = localStorage.getItem("ch_plan_activo");
   if (p === "mes1" || p === "mes2" || p === "mes3" || p === "mes4") return p;
+  // por si quedó "Mes4" guardado sin normalizar
+  const s = (p || "").toLowerCase().replace(/\s+/g, "");
+  if (s.includes("mes4")) return "mes4";
+  if (s.includes("mes3")) return "mes3";
+  if (s.includes("mes2")) return "mes2";
+  if (s.includes("mes1")) return "mes1";
   return null;
 }
+
 
 // ═══════════════════════════════════════════════════════
 // AUDIO LIBRARY
@@ -607,140 +619,159 @@ interface AudioItem {
 }
 
 const AUDIOS: AudioItem[] = [
-  // —— GRATIS ——
+  // —— GRATIS / bienvenida ——
   {
     id: 1,
     cat: "autohipnosis",
     title: "Inducción profunda para la calma",
-    duration: "22:14",
+    duration: "22:00",
     free: true,
     doctor: true,
-    desc: "Sesión guiada para reducción del craving. Regalo de bienvenida.",
+    desc: "Sesión guiada de bienvenida para reducir el craving y calmar el sistema nervioso.",
     plans: [],
-    audioSrc: "/audios/Meditacion-Sueroterapia.mp3",
+    audioSrc: "/audios/Inducción-profunda-para-la-calma.mp3",
   },
   {
-    id: 5,
+    id: 2,
+    cat: "binaural",
+    title: "Meditación — Sueroterapia",
+    duration: "60:00",
+    free: true,
+    doctor: false,
+    desc: "Audio de acompañamiento para sesiones de suero. Calma y foco.",
+    plans: [],
+    audioSrc: "/audios/Meditación-Sueroterapia.mp3",
+  },
+  {
+    id: 3,
     cat: "binaural",
     title: "Ondas Alpha — Reducción del craving",
     duration: "40:00",
     free: true,
     doctor: false,
-    desc: "Frecuencias 8–12 Hz para calma profunda.",
+    desc: "Frecuencias Alpha para calma profunda y manejo del deseo de consumo.",
     plans: [],
-    // audioSrc: "/audios/ondas-alpha.mp3",
-  },
-  {
-    id: 9,
-    cat: "podcasts",
-    title: "Ep.1: El camino hacia la recuperación",
-    duration: "35:45",
-    free: true,
-    doctor: true,
-    desc: "Proceso holístico de sanación.",
-    plans: [],
-    // audioSrc: "/audios/podcast-ep1.mp3",
+    audioSrc: "/audios/Ondas-Alpha-Reducción-del-craving.mp3",
   },
 
-  // —— MES 1 ——
+  // —— MES 1+ ——
   {
-    id: 2,
+    id: 4,
     cat: "autohipnosis",
     title: "Reprogramación de hábitos",
     duration: "18:30",
     free: false,
     doctor: true,
-    desc: "Visualización y sugestión positiva.",
+    desc: "Visualización y sugestión positiva para nuevos hábitos en recuperación.",
     plans: ["mes1", "mes2", "mes3", "mes4"],
+    audioSrc: "/audios/Reprogramación-de-hábitos.mp3",
   },
   {
-    id: 3,
+    id: 5,
     cat: "autohipnosis",
     title: "Liberación del estrés y ansiedad",
     duration: "25:00",
     free: false,
     doctor: true,
-    desc: "Hipnosis clínica para manejo de la abstinencia.",
+    desc: "Hipnosis clínica para manejar estrés, ansiedad y abstinencia.",
     plans: ["mes1", "mes2", "mes3", "mes4"],
+    audioSrc: "/audios/Liberación-del-estrés-y-ansiedad.mp3",
+  },
+  {
+    id: 6,
+    cat: "binaural",
+    title: "Suero terapia — Audio de acompañamiento",
+    duration: "45:00",
+    free: false,
+    doctor: false,
+    desc: "Música relajante de acompañamiento durante la sesión de suero.",
+    plans: ["mes1", "mes2", "mes3", "mes4"],
+    audioSrc: "/audios/Suero-terapia-Audio-de-acompañamiento.mp3",
   },
   {
     id: 7,
-    cat: "binaural",
-    title: "Suero terapia — Audio de acompañamiento",
-    duration: "60:00",
+    cat: "podcasts",
+    title: "Ep. 1 — El camino hacia la recuperación",
+    duration: "30:00",
     free: false,
-    doctor: true,
-    desc: "Música binaural + voz del médico.",
+    doctor: false,
+    desc: "Primer episodio: orientación y esperanza al inicio del proceso.",
     plans: ["mes1", "mes2", "mes3", "mes4"],
+    audioSrc: "/audios/Ep-1-El-camino-hacia-la-recuperación.mp3",
   },
 
-  // —— MES 2 ——
+  // —— MES 2+ ——
   {
-    id: 4,
+    id: 8,
     cat: "autohipnosis",
     title: "Autoimagen positiva y autoestima",
     duration: "19:45",
     free: false,
     doctor: true,
-    desc: "Reconstrucción del autoconcepto.",
+    desc: "Reconstrucción del autoconcepto en el proceso de recuperación.",
     plans: ["mes2", "mes3", "mes4"],
+    audioSrc: "/audios/Autoimagen-positiva-y-autoestima-mes2.mp3",
   },
   {
-    id: 6,
+    id: 9,
     cat: "binaural",
     title: "Ondas Theta — Meditación profunda",
-    duration: "45:00",
+    duration: "40:00",
     free: false,
     doctor: false,
-    desc: "4–8 Hz para meditación y sanación.",
+    desc: "Ondas Theta para meditación profunda y regulación emocional.",
     plans: ["mes2", "mes3", "mes4"],
+    audioSrc: "/audios/Ondas-Theta-Meditación-profunda-mes2.mp3",
   },
   {
     id: 10,
     cat: "podcasts",
-    title: "Ep.2: Neurociencia y adicción",
-    duration: "28:20",
+    title: "Ep. 2 — Neurociencia y adicción",
+    duration: "28:00",
     free: false,
-    doctor: true,
-    desc: "Cómo el cerebro se recupera del consumo.",
+    doctor: false,
+    desc: "Cómo el cerebro se adapta en la adicción y en la recuperación.",
     plans: ["mes2", "mes3", "mes4"],
+    audioSrc: "/audios/Ep-2-Neurociencia-y-adicción-mes2.mp3",
   },
 
-  // —— MES 3 ——
-  {
-    id: 8,
-    cat: "binaural",
-    title: "Ondas Delta — Sueño reparador",
-    duration: "50:00",
-    free: false,
-    doctor: false,
-    desc: "Sueño profundo y regeneración.",
-    plans: ["mes3", "mes4"],
-  },
+  // —— MES 3+ ——
   {
     id: 11,
-    cat: "podcasts",
-    title: "Ep.3: Yoga, mente y adicción",
-    duration: "32:10",
+    cat: "binaural",
+    title: "Ondas Delta — Sueño reparador",
+    duration: "45:00",
     free: false,
     doctor: false,
-    desc: "Yoga terapéutico y recuperación.",
+    desc: "Ondas Delta para mejorar el descanso y la recuperación nocturna.",
     plans: ["mes3", "mes4"],
+    audioSrc: "/audios/Ondas-Delta-Sueño-reparador-mes3.mp3",
+  },
+  {
+    id: 12,
+    cat: "podcasts",
+    title: "Ep. 3 — Yoga, mente y adicción",
+    duration: "32:00",
+    free: false,
+    doctor: false,
+    desc: "Cuerpo, respiración y mente en el proceso de recuperación.",
+    plans: ["mes3", "mes4"],
+    audioSrc: "/audios/Ep-3-Yoga-mente-y-adicción-mes3.mp3",
   },
 
   // —— MES 4 ——
   {
-    id: 12,
+    id: 13,
     cat: "podcasts",
-    title: "Ep.4: Familias en la recuperación",
-    duration: "41:00",
+    title: "Ep. 4 — Familias en la recuperación",
+    duration: "35:00",
     free: false,
     doctor: false,
-    desc: "Involucrar a la familia en el proceso.",
+    desc: "Rol de la familia y la red de apoyo en la consolidación.",
     plans: ["mes4"],
+    audioSrc: "/audios/Ep-4-Familias-en-la-recuperación-mes4.mp3",
   },
 ];
-
 // ═══════════════════════════════════════════════════════
 // VIDEO LIBRARY
 // public/videos/archivo.mp4  |  youtubeId = solo ID
@@ -761,67 +792,89 @@ interface VideoItem {
 }
 
 const VIDEOS: VideoItem[] = [
+  // —— GRATIS (regalo de bienvenida) ——
   {
     id: 1,
     cat: "autohipnosis",
     title: "Autohipnosis: Sesión de bienvenida (regalo)",
-    duration: "18:00",
+    duration: "41:09",
     free: true,
     doctor: true,
-    desc: "Video regalo de bienvenida. Inducción del primer día.",
+    desc: "Video regalo de bienvenida. Inducción guiada para tu primer día en el programa.",
     plans: [],
-    videoSrc: "/videos/autohipnosis.mp4",
-    youtubeId: "YV28Owup2ng",
+    videoSrc: "/videos/Autohipnosis-Sesión-de-bienvenida-regalo-free.mp4",
   },
+
+  // —— MES 1+ ——
   {
     id: 2,
     cat: "autohipnosis",
     title: "Autohipnosis: Semana 2 — Refuerzo motivacional",
-    duration: "22:30",
+    duration: "36:58",
     free: false,
     doctor: true,
-    desc: "Visualización del futuro sin adicción.",
+    desc: "Segunda sesión. Visualización del futuro sin adicción y refuerzo de la motivación.",
     plans: ["mes1", "mes2", "mes3", "mes4"],
-  },
-  {
-    id: 5,
-    cat: "yoga",
-    title: "Yoga Terapéutico: Sesión 1 — Respiración",
-    duration: "30:00",
-    free: false,
-    doctor: false,
-    desc: "Pranayama para ansiedad por abstinencia.",
-    plans: ["mes1", "mes2", "mes3", "mes4"],
+    videoSrc: "/videos/Autohipnosis-Semana-2-Refuerzo-motivacional-mes1.mp4",
   },
   {
     id: 3,
+    cat: "yoga",
+    title: "Yoga terapéutico: Sesión 1 — Respiración",
+    duration: "30:25",
+    free: false,
+    doctor: false,
+    desc: "Pranayama y técnicas de respiración para reducir ansiedad por abstinencia.",
+    plans: ["mes1", "mes2", "mes3", "mes4"],
+    videoSrc: "/videos/Yoga-Terapéutico-Sesión-1-Respiración-mes1.mp4",
+  },
+  {
+    id: 4,
+    cat: "yoga",
+    title: "Ejercicios de respiración Wim Hof (guiados)",
+    duration: "—",
+    free: false,
+    doctor: false,
+    desc: "Respiración guiada tipo Wim Hof para calma, foco y regulación del estrés.",
+    plans: ["mes1", "mes2", "mes3", "mes4"],
+    videoSrc: "/videos/Ejercicios-de-respiración-de-Wim-Hof-guiados.mp4",
+  },
+
+  // —— MES 2+ ——
+  {
+    id: 5,
     cat: "autohipnosis",
     title: "Autohipnosis: Semana 3 — Manejo del craving",
-    duration: "20:15",
+    duration: "61:47",
     free: false,
     doctor: true,
-    desc: "Anclaje hipnótico ante el impulso.",
+    desc: "Técnicas de anclaje hipnótico para resistir el impulso de consumir.",
     plans: ["mes2", "mes3", "mes4"],
+    videoSrc: "/videos/Autohipnosis-Semana-3-Manejo-del-craving-mes2.mp4",
   },
   {
     id: 6,
     cat: "yoga",
-    title: "Yoga Terapéutico: Sesión 2 — Equilibrio",
-    duration: "35:00",
+    title: "Yoga terapéutico: Sesión 2 — Equilibrio",
+    duration: "36:16",
     free: false,
     doctor: false,
-    desc: "Asanas para el sistema nervioso.",
+    desc: "Secuencia de asanas para restablecer el equilibrio del sistema nervioso.",
     plans: ["mes2", "mes3", "mes4"],
+    videoSrc: "/videos/Yoga-Terapéutico-Sesión-2-Equilibrio-mes2.mp4",
   },
+
+  // —— MES 3+ ——
   {
-    id: 4,
+    id: 7,
     cat: "autohipnosis",
     title: "Autohipnosis: Semana 4 — Consolidación",
-    duration: "25:00",
+    duration: "44:39",
     free: false,
     doctor: true,
-    desc: "Autosugestión de consolidación.",
+    desc: "Sesión de consolidación. Autosugestión positiva y cierre del ciclo mensual.",
     plans: ["mes3", "mes4"],
+    videoSrc: "/videos/Autohipnosis-Semana-4-Consolidación-mes3.mp4",
   },
 ];
 
@@ -851,21 +904,16 @@ const SECTIONS = [
   { id: "cierre", label: "Cierre" },
 ];
 
-const QUESTIONS: Question[] = [
-  // ── Identificación ──────────────────────────────────────
-  {
-    id: "nombre",
-    section: "identificacion",
-    text: "Para empezar, ¿cómo prefiere que le llamemos?",
-    type: "text",
-    placeholder: "Nombre o apodo",
-    required: true,
-  },
+const QUESTIONS = [
+  // —— Consentimiento ya va en pantalla aparte ——
+
+  // Identificación
+  { id: "nombre", section: "id", type: "text", text: "¿Cómo prefiere que le llamemos?" },
   {
     id: "edad",
-    section: "identificacion",
-    text: "¿En qué rango de edad se encuentra? (nos ayuda con estadísticas clínicas)",
+    section: "id",
     type: "select",
+    text: "¿En qué rango de edad se encuentra? (solo para estadísticas)",
     options: [
       "Entre 14 y 18 años",
       "Entre 18 y 24 años",
@@ -874,286 +922,215 @@ const QUESTIONS: Question[] = [
       "De 45 a 60 años",
       "De 60 o más años",
     ],
-    required: true,
   },
   {
     id: "genero",
-    section: "identificacion",
-    text: "¿Con qué género se identifica?",
+    section: "id",
     type: "select",
+    text: "Género (opcional)",
     options: ["Mujer", "Hombre", "Otro", "Prefiero no decir"],
   },
-  {
-    id: "ciudad",
-    section: "identificacion",
-    text: "¿En qué ciudad o municipio se encuentra actualmente?",
-    type: "text",
-    placeholder: "Ej. Bogotá, Medellín, Cali…",
-  },
+  { id: "ciudad", section: "id", type: "text", text: "¿En qué ciudad o municipio se encuentra?" },
 
-  // ── Motivo de consulta ──────────────────────────────────
+  // Motivo + contexto sismo
   {
     id: "motivo_consulta",
     section: "motivo",
-    text: "¿Qué le trajo a esta consulta hoy? Elija la opción que mejor describe su situación.",
-    type: "select",
+    type: "multiselect",
+    text: "¿Qué le trae a esta consulta hoy? (puede marcar varias)",
     options: [
       "Ansiedad o crisis de pánico",
-      "Depresión o decaimiento persistente",
+      "Depresión o tristeza profunda",
       "Problemas con el consumo de sustancias",
-      "Dificultad para dejar o reducir el consumo",
-      "Estrés o trauma reciente (incluyendo eventos como sismos u otras emergencias)",
-      "Problemas de sueño",
-      "Ideas de hacerse daño o crisis emocional",
-      "Quiero orientación / evaluación preventiva",
-      "Otro motivo relacionado con salud mental",
+      "Insomnio o pesadillas",
+      "Duelo o pérdida",
+      "Estrés por el terremoto / sismo reciente",
+      "Miedo a réplicas o a volver a casa",
+      "Problemas familiares o de pareja",
+      "Ideas de no querer seguir viviendo",
+      "Otro motivo",
     ],
-    required: true,
   },
   {
-    id: "motivo_detalle",
+    id: "impacto_sismo",
     section: "motivo",
-    text: "Si lo desea, cuéntenos un poco más con sus palabras (opcional pero muy útil).",
-    type: "textarea",
-    placeholder: "Puede escribir libremente…",
+    type: "select",
+    text: "Respecto al sismo/terremoto reciente: ¿cómo le ha afectado?",
+    options: [
+      "No me afectó de forma importante",
+      "Miedo o ansiedad ocasional",
+      "Ansiedad fuerte o crisis",
+      "Perdí vivienda o bienes",
+      "Perdí a alguien cercano",
+      "Desplazado o en albergue",
+      "Prefiero no detallar",
+    ],
   },
 
-  // ── Historia de consumo ─────────────────────────────────
+  // Consumo
   {
     id: "edad_inicio",
     section: "consumo",
-    text: "¿A qué edad probó alguna sustancia por primera vez?",
     type: "select",
+    text: "¿A qué edad probó alguna sustancia por primera vez?",
     options: [
-      "Nunca he consumido",
       "Entre 14 y 18 años",
       "Entre 18 y 24 años",
       "De 24 a 36 años",
       "De 36 a 45 años",
       "De 45 a 60 años",
       "De 60 o más años",
-      "No recuerdo con exactitud",
+      "Nunca he consumido",
     ],
   },
   {
     id: "sustancias",
     section: "consumo",
-    text: "¿Qué sustancias ha consumido alguna vez? Puede seleccionar varias.",
-    type: "multi",
+    type: "multiselect",
+    text: "¿Qué sustancias ha consumido alguna vez? (todas las que apliquen)",
     options: [
-      "Ninguna",
       "Alcohol",
-      "Cigarrillo / tabaco",
-      "Cannabis / marihuana",
+      "Cigarrillo / nicotina",
+      "Marihuana",
       "Cocaína",
-      "Bazuco / pasta base",
-      "Anfetaminas / estimulantes",
-      "Benzodiacepinas (sin receta o en exceso)",
-      "Opioides / heroína",
-      "Inhalantes",
-      "Otras sustancias",
+      "Basuco / pasta base",
+      "Benzodiacepinas (sin fórmula o en exceso)",
+      "Opiáceos",
+      "Estimulantes (anfetaminas, etc.)",
+      "Otras",
+      "Ninguna",
     ],
   },
   {
     id: "sustancia_principal",
     section: "consumo",
-    text: "¿Cuál es su sustancia principal de consumo actual (si aplica)?",
     type: "select",
+    text: "¿Cuál es su sustancia principal de consumo actual?",
     options: [
-      "No consumo actualmente",
       "Alcohol",
-      "Cigarrillo / tabaco",
-      "Cannabis",
+      "Cigarrillo / nicotina",
+      "Marihuana",
       "Cocaína",
-      "Bazuco",
-      "Benzodiacepinas",
+      "Basuco",
+      "Medicamentos",
       "Otra",
+      "Ninguna en la actualidad",
     ],
   },
   {
     id: "frecuencia",
     section: "consumo",
-    text: "¿Con qué frecuencia consume actualmente?",
     type: "select",
+    text: "¿Con qué frecuencia consume actualmente?",
     options: [
-      "No consumo",
       "Varias veces al día",
       "Diariamente",
       "Varias veces a la semana",
-      "Una vez a la semana",
-      "Algunas veces al mes",
-      "Ocasionalmente",
+      "Semanal",
+      "Ocasional",
+      "No consumo actualmente",
     ],
   },
   {
     id: "ultimo_consumo",
     section: "consumo",
-    text: "¿Cuándo fue la última vez que consumió?",
     type: "select",
+    text: "¿Cuándo fue la última vez que consumió?",
     options: [
       "Hoy",
-      "Esta semana que pasó",
+      "Esta semana",
       "Hace una semana",
       "Hace un mes",
       "Más de un mes",
-      "Más de seis meses / no aplica",
+      "No aplica",
     ],
   },
   {
     id: "craving",
     section: "consumo",
-    text: "Escala del 1 al 10: ¿qué tan fuerte es su deseo de consumir ahora? (1 = ningún deseo · 10 = deseo muy intenso)",
     type: "scale",
+    text: "Del 1 al 10: ¿qué tan fuerte es su deseo de consumir ahora? (1 = ningún deseo · 10 = muy intenso)",
   },
   {
     id: "abstinencia_escala",
     section: "consumo",
-    text: "Escala del 1 al 10: ¿qué tan intensos son los síntomas de abstinencia o malestar físico/emocional al no consumir? (1 = ninguno · 10 = muy intensos)",
     type: "scale",
+    text: "Del 1 al 10: ¿qué tan fuertes son síntomas de abstinencia ahora? (1 = ninguno · 10 = muy intensos)",
   },
 
-  // ── Antecedentes psiquiátricos ──────────────────────────
+  // Salud mental
   {
     id: "atencion_psicologica",
-    section: "psiquiatria",
-    text: "¿Ha recibido atención psicológica alguna vez?",
+    section: "salud",
     type: "select",
-    options: [
-      "Sí, actualmente",
-      "Sí, en el pasado",
-      "No, nunca",
-      "Estoy buscando por primera vez",
-    ],
+    text: "¿Ha recibido atención psicológica?",
+    options: ["Sí, actualmente", "Sí, en el pasado", "No", "Prefiero no decir"],
   },
   {
     id: "atencion_psiquiatrica",
-    section: "psiquiatria",
-    text: "¿Ha recibido atención psiquiátrica alguna vez?",
+    section: "salud",
     type: "select",
-    options: [
-      "Sí, actualmente",
-      "Sí, en el pasado",
-      "No, nunca",
-      "Estoy buscando por primera vez",
-    ],
+    text: "¿Ha recibido atención psiquiátrica?",
+    options: ["Sí, actualmente", "Sí, en el pasado", "No", "Prefiero no decir"],
   },
   {
     id: "diagnosticos",
-    section: "psiquiatria",
-    text: "¿Le han diagnosticado alguna de estas condiciones? Puede seleccionar varias.",
-    type: "multi",
+    section: "salud",
+    type: "multiselect",
+    text: "¿Le han diagnosticado alguna de estas condiciones?",
     options: [
-      "Ninguna de las anteriores",
-      "Trastorno de ansiedad",
       "Depresión",
-      "Trastorno bipolar",
+      "Trastorno de ansiedad",
       "TEPT / trauma",
+      "Trastorno bipolar",
       "TDAH",
-      "Trastorno por uso de sustancias",
-      "Otro diagnóstico de salud mental",
+      "Ninguna de las anteriores",
     ],
   },
-
-  // ── Antecedentes médicos ────────────────────────────────
   {
     id: "enfermedades",
-    section: "medicos",
-    text: "¿Tiene alguna enfermedad médica diagnosticada? Puede seleccionar varias.",
-    type: "multi",
+    section: "salud",
+    type: "multiselect",
+    text: "¿Tiene alguna enfermedad médica diagnosticada?",
     options: [
-      "Ninguna",
       "Diabetes",
-      "Hipertensión / problemas cardíacos",
+      "Hipertensión / cardíaco",
       "Hepatitis",
       "VIH",
-      "Enfermedad tiroidea",
-      "Problemas respiratorios",
-      "Dolor crónico",
-      "Otra condición metabólica o médica",
-    ],
-  },
-  {
-    id: "medicamentos",
-    section: "medicos",
-    text: "¿Toma actualmente algún medicamento (incluido psiquiátrico)?",
-    type: "textarea",
-    placeholder: "Nombre del medicamento y dosis aproximada, o escriba “Ninguno”",
-  },
-  {
-    id: "antecedentes_familiares",
-    section: "medicos",
-    text: "¿Hay historial de adicciones o enfermedades mentales en su familia?",
-    type: "select",
-    options: ["Sí", "No", "No estoy seguro/a"],
-  },
-  {
-    id: "cuales_familiares",
-    section: "medicos",
-    text: "Si respondió sí: ¿quiénes? Puede seleccionar varios.",
-    type: "multi",
-    options: [
-      "Padre o madre",
-      "Hermanos/as",
-      "Abuelos/as",
-      "Tíos/as",
-      "Otros familiares",
-      "No aplica",
-    ],
-  },
-
-  // ── Situación social ────────────────────────────────────
-  {
-    id: "situacion_laboral",
-    section: "social",
-    text: "¿Cuál es su situación laboral o de estudio actual?",
-    type: "select",
-    options: [
-      "Trabajo estable",
-      "Trabajo informal / inestable",
-      "Estudiante",
-      "Desempleado/a",
-      "Pensionado/a o incapacidad",
+      "Problemas metabólicos",
+      "Ninguna",
       "Otra",
     ],
   },
   {
-    id: "red_apoyo",
-    section: "social",
-    text: "¿Cuenta con personas de apoyo (familia, pareja, amigos) en este momento?",
+    id: "antecedentes_familiares",
+    section: "salud",
     type: "select",
-    options: [
-      "Sí, una red sólida",
-      "Sí, pero limitada",
-      "Casi nadie",
-      "Me siento solo/a",
-    ],
+    text: "¿Hay historial de adicciones o enfermedades mentales en su familia?",
+    options: ["Sí", "No", "No estoy seguro"],
   },
   {
-    id: "impacto_evento",
-    section: "social",
-    text: "¿Algún evento reciente (pérdida, emergencia, sismo u otra crisis) ha afectado su salud mental o su consumo?",
-    type: "select",
-    options: [
-      "Sí, de forma importante",
-      "Un poco",
-      "No especialmente",
-      "Prefiero no detallar",
-    ],
+    id: "cuales_familiares",
+    section: "salud",
+    type: "multiselect",
+    text: "Si sí: ¿quiénes? (puede marcar varios)",
+    options: ["Padre o madre", "Hermanos", "Tíos", "Abuelos", "Otros", "No aplica"],
   },
 
-  // ── Cierre ──────────────────────────────────────────────
+  // Cierre
   {
     id: "motivacion",
     section: "cierre",
-    text: "En una escala del 1 al 10: ¿qué tan motivado/a se siente a cuidar su salud mental o reducir el consumo? (1 = nada · 10 = totalmente)",
-    type: "scale",
+    type: "select",
+    text: "¿Qué tan motivado está a cambiar su situación ahora?",
+    options: ["Poco", "Algo", "Bastante", "Mucho"],
   },
   {
     id: "expectativas",
     section: "cierre",
-    text: "¿Qué espera de este proceso o de la clínica? (puede ser breve)",
     type: "textarea",
-    placeholder: "Ej. sentirme más estable, dejar de consumir, hablar con alguien…",
+    text: "¿Qué espera de este acompañamiento o de la clínica?",
+    placeholder: "Escriba con sinceridad; no hay respuestas incorrectas",
   },
 ];
 // ═══════════════════════════════════════════════════════
@@ -1276,6 +1253,75 @@ Responde SOLO el JSON.`;
   return parsed;
 }
 
+type PlanId = "mes1" | "mes2" | "mes3" | "mes4";
+
+/** Normaliza "Mes 1", "mes1", "1" → "mes1" */
+function setPlanActivoLocal(programa: string | null | undefined) {
+  if (!programa) {
+    localStorage.removeItem("ch_plan_activo");
+    return;
+  }
+  const s = String(programa).toLowerCase().replace(/\s+/g, "");
+  let id: PlanId | null = null;
+  if (s.includes("mes1") || s === "1") id = "mes1";
+  else if (s.includes("mes2") || s === "2") id = "mes2";
+  else if (s.includes("mes3") || s === "3") id = "mes3";
+  else if (s.includes("mes4") || s === "4") id = "mes4";
+  if (id) localStorage.setItem("ch_plan_activo", id);
+  else localStorage.removeItem("ch_plan_activo");
+}
+
+/**
+ * REGLA ESTRICTA:
+ * - free: true → cualquiera
+ * - free: false → SOLO si hay plan activo Y el plan está en item.plans
+ * - mes4 desbloquea todo lo de plan
+ * - SIN plan → NADA premium
+ */
+
+function usePlanActivo() {
+  const API = (import.meta.env.VITE_API_URL as string) || "http://localhost:8080";
+  const [tienePlan, setTienePlan] = useState(false);
+  const [programa, setPrograma] = useState<string | null>(null);
+  const [hasta, setHasta] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const jwt = localStorage.getItem("ch_jwt") || "";
+    if (!jwt) {
+      localStorage.removeItem("ch_plan_activo");
+      setTienePlan(false);
+      setPrograma(null);
+      setLoading(false);
+      return;
+    }
+    fetch(`${API}/api/pagos/mi-plan`, {
+      headers: { Authorization: `Bearer ${jwt}` },
+    })
+      .then((r) => r.json())
+      .then((j) => {
+        const d = j.data || j;
+        const ok = !!d.tienePlan;
+        setTienePlan(ok);
+        setPrograma(d.programa || null);
+        setHasta(d.hasta || null);
+        // Sync localStorage con la VERDAD del backend
+        if (ok && d.programa) {
+          setPlanActivoLocal(d.programa);
+        } else {
+          localStorage.removeItem("ch_plan_activo"); // limpia basura vieja
+        }
+      })
+      .catch(() => {
+        setTienePlan(false);
+        localStorage.removeItem("ch_plan_activo");
+      })
+      .finally(() => setLoading(false));
+  }, [API]);
+
+  return { tienePlan, programa, hasta, loading };
+}
+
 // ═══════════════════════════════════════════════════════
 // LANG SWITCHER
 // ═══════════════════════════════════════════════════════
@@ -1361,6 +1407,17 @@ function NavBar() {
           <Link to="/tratamientos" className={linkClass("/tratamientos")}>
             {t("programs")}
           </Link>
+          <Link
+            to="/mi-plan"
+            className={clsx(
+              "text-sm px-3 py-1.5 rounded-lg transition-colors",
+              location.pathname === "/mi-plan"
+                ? "bg-primary/15 text-primary"
+                : "text-muted-foreground hover:text-foreground"
+            )}
+          >
+            Mi plan
+          </Link>
           <Link to="/audios" className={linkClass("/audios")}>
             {t("audios")}
           </Link>
@@ -1370,6 +1427,7 @@ function NavBar() {
           <Link to="/acompanamiento" className={linkClass("/acompanamiento")}>
             Acompañamiento
           </Link>
+
 
           {isAdmin && (
             <Link to="/admin" className={linkClass("/admin")}>
@@ -1381,6 +1439,8 @@ function NavBar() {
               Panel médico
             </Link>
           )}
+
+
         </nav>
 
         {/* Derecha: idioma + usuario + menú móvil */}
@@ -3660,6 +3720,8 @@ function PaymentModal({ program, userName, onClose, t }: { program: typeof PROGR
         // ── MODO DEMO (sin clave configurada) ─────────────────────
         await new Promise(r => setTimeout(r, 2500));
         setStep("success");
+        setPlanActivoLocal(programaId); // ej. "mes1"
+        // opcional: navigate("/mi-plan");
       }
     } catch (err: any) {
       setPayError(err.message || "Error procesando el pago. Intente de nuevo.");
@@ -3742,15 +3804,23 @@ function PaymentModal({ program, userName, onClose, t }: { program: typeof PROGR
 
 function AudioPage() {
   const { t } = useLang();
-  const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState<"audios" | "videos">("audios");
   const [activeCat, setActiveCat] = useState<"all" | "autohipnosis" | "binaural" | "podcasts">("all");
   const [playing, setPlaying] = useState<number | null>(null);
   const [watchingVideo, setWatchingVideo] = useState<VideoItem | null>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
-  const planActivo = getPlanActivo(); // null | "mes1" | "mes2" | "mes3" | "mes4"
-  const filtered = activeCat === "all" ? AUDIOS : AUDIOS.filter((a) => a.cat === activeCat);
+  const { tienePlan, programa } = usePlanActivo();
+  // UNA sola declaración de planActivo en toda la función
+  const planActivo: PlanId | null = tienePlan ? getPlanActivo() : null;
+
+  useEffect(() => {
+    if (tienePlan && programa) setPlanActivoLocal(programa);
+    if (!tienePlan) localStorage.removeItem("ch_plan_activo");
+  }, [tienePlan, programa]);
+
+  const filtered =
+    activeCat === "all" ? AUDIOS : AUDIOS.filter((a) => a.cat === activeCat);
 
   function handlePlay(audio: AudioItem) {
     if (!puedeReproducir(audio, planActivo)) {
@@ -3880,7 +3950,7 @@ function AudioPage() {
 
             <div className="grid md:grid-cols-2 gap-4">
               {filtered.map((audio) => {
-                const unlocked = puedeReproducir(audio, planActivo);
+                  const unlocked = puedeReproducir(audio, planActivo);
                 const isPlaying = playing === audio.id;
                 const CatIcon =
                   audio.cat === "autohipnosis" ? Mic : audio.cat === "binaural" ? Music : Headphones;
@@ -4256,9 +4326,17 @@ type AdminTab = "resumen" | "usuarios" | "historias" | "contactos";
 
 interface AdminUsuario {
   id: number; nombre: string; email: string; rol: string; activo: boolean; creadoEn?: string;
+  planActivo?: string;
+  planActivoDesde?: string;
+  planActivoHasta?: string;
 }
 interface AdminHistoria {
   id: number; usuarioId?: number; respuestas?: Record<string, string>; creadoEn?: string; consentimientoAceptado?: boolean;
+usuarioNombre?: string;
+usuarioEmail?: string;
+planActivo?: string;
+planActivoHasta?: string;
+nombre?: string;
 }
 interface AdminContacto {
   id: number; nombre: string; telefono?: string; tipo?: string; mensaje?: string; estado: string; creadoEn?: string;
@@ -4464,44 +4542,78 @@ function AdminPage() {
                         <th className="text-left px-4 py-3 text-xs font-medium text-muted-foreground hidden md:table-cell">Email</th>
                         <th className="text-left px-4 py-3 text-xs font-medium text-muted-foreground">Rol</th>
                         <th className="text-left px-4 py-3 text-xs font-medium text-muted-foreground">Estado</th>
+                        <th className="text-left px-4 py-3 text-xs font-medium text-muted-foreground">Plan</th>
                         <th className="text-left px-4 py-3 text-xs font-medium text-muted-foreground">Acciones</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-border">
-                      {usuarios.map(u => (
+                      {usuarios.map((u) => (
                         <tr key={u.id} className="hover:bg-muted/20 transition-colors">
                           <td className="px-4 py-3">
                             <div className="flex items-center gap-2">
                               <div className="w-7 h-7 rounded-full bg-primary/15 flex items-center justify-center text-xs font-bold text-primary">
-                                {u.nombre.charAt(0).toUpperCase()}
+                                {(u.nombre || "?").charAt(0).toUpperCase()}
                               </div>
-                              <span className="font-medium">{u.nombre}</span>
+                              <span className="font-medium text-sm">{u.nombre}</span>
                             </div>
                           </td>
-                          <td className="px-4 py-3 text-muted-foreground hidden md:table-cell">{u.email}</td>
+                          <td className="px-4 py-3 text-muted-foreground hidden md:table-cell text-xs">
+                            {u.email}
+                          </td>
                           <td className="px-4 py-3">
-                            <span className={clsx("text-[10px] px-2 py-0.5 rounded-full font-medium",
-                              u.rol === "ADMIN" ? "bg-primary/15 text-primary" : "bg-muted text-muted-foreground")}>
+                            <span
+                              className={clsx(
+                                "text-[10px] px-2 py-0.5 rounded-full font-medium",
+                                u.rol === "ADMIN" ? "bg-primary/15 text-primary" : "bg-muted text-muted-foreground"
+                              )}
+                            >
                               {u.rol}
                             </span>
                           </td>
                           <td className="px-4 py-3">
-                            <span className={clsx("text-[10px] px-2 py-0.5 rounded-full font-medium",
-                              u.activo ? "bg-emerald-500/15 text-emerald-400" : "bg-red-500/15 text-red-400")}>
+                            <span
+                              className={clsx(
+                                "text-[10px] px-2 py-0.5 rounded-full font-medium",
+                                u.activo ? "bg-emerald-500/15 text-emerald-400" : "bg-red-500/15 text-red-400"
+                              )}
+                            >
                               {u.activo ? "Activo" : "Inactivo"}
                             </span>
                           </td>
+                          <td className="px-4 py-3 text-xs">
+                            {u.planActivo ? (
+                              <span className="text-emerald-400">
+                                {u.planActivo}
+                                {u.planActivoHasta && (
+                                  <span className="block text-muted-foreground">
+                                    hasta {new Date(u.planActivoHasta).toLocaleDateString("es-CO")}
+                                  </span>
+                                )}
+                              </span>
+                            ) : (
+                              <span className="text-muted-foreground">Sin plan</span>
+                            )}
+                          </td>
                           <td className="px-4 py-3">
                             <div className="flex items-center gap-2">
-                              <button onClick={() => abrirEditarUsuario(u)}
-                                className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition-colors" title="Editar">
+                              <button
+                                type="button"
+                                onClick={() => abrirEditarUsuario(u)}
+                                className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+                                title="Editar"
+                              >
                                 <Eye className="w-3.5 h-3.5" />
                               </button>
                               {u.rol !== "ADMIN" && (
-                                <button onClick={() => toggleActivo(u)}
-                                  className={clsx("p-1.5 rounded-lg transition-colors text-xs",
-                                    u.activo ? "text-red-400 hover:bg-red-500/10" : "text-emerald-400 hover:bg-emerald-500/10")}
-                                  title={u.activo ? "Desactivar" : "Activar"}>
+                                <button
+                                  type="button"
+                                  onClick={() => toggleActivo(u)}
+                                  className={clsx(
+                                    "p-1.5 rounded-lg transition-colors text-xs",
+                                    u.activo ? "text-red-400 hover:bg-red-500/10" : "text-emerald-400 hover:bg-emerald-500/10"
+                                  )}
+                                  title={u.activo ? "Desactivar" : "Activar"}
+                                >
                                   {u.activo ? <X className="w-3.5 h-3.5" /> : <CheckCircle className="w-3.5 h-3.5" />}
                                 </button>
                               )}
@@ -4527,7 +4639,9 @@ function AdminPage() {
                     <thead className="bg-muted/40 border-b border-border">
                       <tr>
                         <th className="text-left px-4 py-3 text-xs font-medium text-muted-foreground">ID</th>
-                        <th className="text-left px-4 py-3 text-xs font-medium text-muted-foreground hidden md:table-cell">Paciente</th>
+                        <th className="text-left px-4 py-3 text-xs font-medium text-muted-foreground">Paciente</th>
+                        <th className="text-left px-4 py-3 text-xs font-medium text-muted-foreground hidden md:table-cell">Email</th>
+                        <th className="text-left px-4 py-3 text-xs font-medium text-muted-foreground">Plan</th>
                         <th className="text-left px-4 py-3 text-xs font-medium text-muted-foreground">Fecha</th>
                         <th className="text-left px-4 py-3 text-xs font-medium text-muted-foreground">Consentimiento</th>
                         <th className="text-left px-4 py-3 text-xs font-medium text-muted-foreground">Acciones</th>
@@ -4537,8 +4651,18 @@ function AdminPage() {
                       {historias.map(h => (
                         <tr key={h.id} className="hover:bg-muted/20 transition-colors">
                           <td className="px-4 py-3 font-mono text-xs text-muted-foreground">#{h.id}</td>
-                          <td className="px-4 py-3 hidden md:table-cell text-muted-foreground">
-                            {h.respuestas?.nombre || h.respuestas?.["nombre"] || `Usuario ${h.usuarioId || ""}`}
+                          <td className="px-4 py-3 text-sm">
+                            {h.usuarioNombre || h.nombre || h.respuestas?.nombre || `Usuario ${h.usuarioId || ""}`}
+                          </td>
+                          <td className="px-4 py-3 text-xs text-muted-foreground hidden md:table-cell">
+                            {h.usuarioEmail || "—"}
+                          </td>
+                          <td className="px-4 py-3 text-xs">
+                            {h.planActivo ? (
+                              <span className="text-emerald-400">{h.planActivo}</span>
+                            ) : (
+                              <span className="text-muted-foreground">—</span>
+                            )}
                           </td>
                           <td className="px-4 py-3 text-xs text-muted-foreground">
                             {h.creadoEn ? new Date(h.creadoEn).toLocaleDateString("es-CO") : "—"}
@@ -5223,25 +5347,59 @@ function AcompanamientoPage() {
   const navigate = useNavigate();
   const { user } = useAuth();
   const API = (import.meta.env.VITE_API_URL as string) || "http://localhost:8080";
+  const { tienePlan, programa } = usePlanActivo();
+
+  const citaIa = (() => {
+    try {
+      return JSON.parse(localStorage.getItem("ch_cita_ia") || "null");
+    } catch {
+      return null;
+    }
+  })();
+
+  const rolSesion: string = citaIa?.rolIa || "PSICOLOGO";
+  const motivoSesion: string = citaIa?.motivo || "";
+  const citaId = citaIa?.id || null;
+
+  const rolLabel =
+    rolSesion === "PSIQUIATRA"
+      ? "psiquiatra"
+      : rolSesion === "MEDICO_HOLISTICO"
+      ? "médico holístico"
+      : "psicólogo/a";
+
+  // Límite de mensajes de usuario por sesión de cita (evita bucle)
+  const MAX_USER_MSGS = tienePlan ? 12 : 6;
+  // Minutos de inactividad → cierra sesión
+  const INACTIVITY_MIN = 12;
+
   const [msgs, setMsgs] = useState<{ role: "user" | "bot"; text: string }[]>([
     {
       role: "bot",
       text:
         `Hola${user?.name ? ", " + String(user.name).split(" ")[0] : ""}. ` +
-        "Este es un espacio seguro de acompañamiento. Puede contarme cómo se siente. " +
-        "Emergencia: Línea de la Vida 800-911-2000 o 123.",
+        `En esta consulta trabajo con enfoque de ${rolLabel}` +
+        (programa ? ` (plan ${programa})` : "") +
+        ". " +
+        (motivoSesion
+          ? `Motivo registrado: «${motivoSesion}». ¿Cómo se siente ahora?`
+          : "¿Qué le gustaría trabajar hoy?") +
+        " Emergencia: Línea de la Vida 800-911-2000 o 123.",
     },
   ]);
   const [text, setText] = useState("");
   const [loading, setLoading] = useState(false);
   const [checking, setChecking] = useState(true);
+  const [sessionClosed, setSessionClosed] = useState(false);
+  const [userMsgCount, setUserMsgCount] = useState(0);
   const bottomRef = useRef<HTMLDivElement>(null);
+  const lastActivity = useRef(Date.now());
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [msgs, loading]);
 
-  // Si no tiene historia clínica → ir a /historia
+  // Historia obligatoria
   useEffect(() => {
     const jwt = localStorage.getItem("ch_jwt") || "";
     if (!jwt) {
@@ -5253,21 +5411,83 @@ function AcompanamientoPage() {
     })
       .then((r) => r.json())
       .then((j) => {
-        const tiene = j?.data?.tieneHistoria === true;
-        if (!tiene) navigate("/historia");
+        if (j?.data?.tieneHistoria !== true) navigate("/historia");
       })
-      .catch(() => {
-        // Si falla el endpoint, no bloqueamos el chat
-      })
+      .catch(() => {})
       .finally(() => setChecking(false));
   }, [API, navigate]);
 
+  // Cierre por inactividad
+  useEffect(() => {
+    if (sessionClosed) return;
+    const t = setInterval(() => {
+      const mins = (Date.now() - lastActivity.current) / 60000;
+      if (mins >= INACTIVITY_MIN && userMsgCount > 0) {
+        cerrarSesion(
+          "Por inactividad cerramos esta consulta. Abajo tiene un resumen y cómo seguir."
+        );
+      }
+    }, 30000);
+    return () => clearInterval(t);
+  }, [sessionClosed, userMsgCount]);
+
+  function touch() {
+    lastActivity.current = Date.now();
+  }
+
+  function mensajeCierreResumen() {
+    const planTxt = tienePlan
+      ? `Su plan ${programa || "activo"} incluye audios, videos y citas. Revise «Audios y Videos» y «Mi plan».`
+      : "Le recomiendo activar el Programa Mes 1 para acompañamiento continuo, biblioteca terapéutica y citas con profesional.";
+    return (
+      `Cerramos esta consulta de apoyo (${rolLabel}). ` +
+      `Ha trabajado el motivo: «${motivoSesion || "consulta general"}». ` +
+      `Recomendación: priorice calma, sueño y red de apoyo; si el craving o la angustia suben, use las herramientas del programa. ` +
+      planTxt +
+      " Puede agendar otra cita cuando lo necesite. Emergencia: 123 / 800-911-2000."
+    );
+  }
+
+  function cerrarSesion(extraBot?: string) {
+    if (sessionClosed) return;
+    setSessionClosed(true);
+    const cierre = extraBot
+      ? `${extraBot}\n\n${mensajeCierreResumen()}`
+      : mensajeCierreResumen();
+    setMsgs((m) => [...m, { role: "bot", text: cierre }]);
+
+    // Registro local de la sesión (historial del paciente)
+    try {
+      const key = "ch_citas_ia_historial";
+      const prev = JSON.parse(localStorage.getItem(key) || "[]");
+      prev.unshift({
+        id: citaId || Date.now(),
+        rol: rolSesion,
+        motivo: motivoSesion,
+        programa: programa || null,
+        mensajesUsuario: userMsgCount,
+        cerradoEn: new Date().toISOString(),
+        preview: msgs.slice(-4).map((x) => x.text).join(" | "),
+      });
+      localStorage.setItem(key, JSON.stringify(prev.slice(0, 30)));
+    } catch {}
+
+    // Limpia contexto de cita activa (ya no es “sesión abierta”)
+    localStorage.removeItem("ch_cita_ia");
+  }
+
   async function enviar() {
     const mensaje = text.trim();
-    if (!mensaje || loading) return;
+    if (!mensaje || loading || sessionClosed) return;
+    touch();
     setText("");
     setMsgs((m) => [...m, { role: "user", text: mensaje }]);
+    const nextCount = userMsgCount + 1;
+    setUserMsgCount(nextCount);
     setLoading(true);
+
+    // Si llega al límite → última respuesta orientada a cierre
+    const forzarCierre = nextCount >= MAX_USER_MSGS;
 
     try {
       const jwt = localStorage.getItem("ch_jwt") || "";
@@ -5277,8 +5497,20 @@ function AcompanamientoPage() {
           "Content-Type": "application/json",
           Authorization: `Bearer ${jwt}`,
         },
-        body: JSON.stringify({ mensaje }),
+        body: JSON.stringify({
+          mensaje,
+          historial: msgs.slice(-10).map((m) => ({
+            role: m.role === "bot" ? "assistant" : "user",
+            content: m.text,
+          })),
+          rolProfesional: rolSesion || "PSICOLOGO",
+          motivoCita: motivoSesion || "",
+          programa: programa || null,
+          // señal para que el backend acorte y recomiende
+          fase: forzarCierre ? "CIERRE" : nextCount >= Math.floor(MAX_USER_MSGS * 0.6) ? "RECOMENDAR" : "ESCUCHAR",
+        }),
       });
+
       const j = await r.json();
 
       if (r.status === 402 || j?.data?.requierePago) {
@@ -5288,21 +5520,30 @@ function AcompanamientoPage() {
             role: "bot",
             text:
               j.message ||
-              "Has llegado al límite de mensajes gratuitos. Activa el Programa Mes 1 para seguir conversando y poder agendar tu consulta.",
+              j.mensaje ||
+              "Ha alcanzado el límite gratuito. Active el Programa Mes 1 para continuar el acompañamiento y acceder a audios/videos.",
           },
         ]);
-        setBlocked(true); // state boolean
+        setLoading(false);
+        cerrarSesion();
         return;
       }
 
-      if (!r.ok) throw new Error(j.message || "No se pudo responder");
+      if (!r.ok) throw new Error(j.message || j.mensaje || "No se pudo responder");
 
+      const respuesta =
+        j.data?.respuesta || j.respuesta || "Estoy aquí para escucharle.";
+
+      setMsgs((m) => [...m, { role: "bot", text: respuesta }]);
+
+      if (forzarCierre) {
+        setTimeout(() => cerrarSesion("Hemos completado el tiempo de esta consulta."), 400);
+      }
+    } catch (e: any) {
       setMsgs((m) => [
         ...m,
-        { role: "bot", text: j.data?.respuesta || "Estoy aquí para escucharle." },
+        { role: "bot", text: e?.message || "Error de conexión" },
       ]);
-    } catch (e: any) {
-      setMsgs((m) => [...m, { role: "bot", text: e.message || "Error de conexión" }]);
     } finally {
       setLoading(false);
     }
@@ -5317,38 +5558,55 @@ function AcompanamientoPage() {
   }
 
   return (
-    <div className="min-h-screen bg-background flex flex-col max-w-3xl mx-auto pb-8">
-      <header className="px-4 py-4 border-b border-border flex items-center justify-between gap-3">
+    <div
+      className="min-h-screen bg-background flex flex-col"
+      style={{ fontFamily: "'Plus Jakarta Sans', 'DM Sans', sans-serif" }}
+    >
+      <div className="border-b border-border px-4 py-3 flex items-center justify-between gap-2">
         <div>
-          <h1 className="text-lg font-bold">Acompañamiento</h1>
-          <p className="text-xs text-muted-foreground">
-            Espacio para ser escuchado · Apoyo + equipo clínico
+          <p className="text-[10px] text-primary uppercase tracking-widest">Consulta de apoyo</p>
+          <h1 className="text-sm font-semibold capitalize">{rolLabel}</h1>
+          <p className="text-[10px] text-muted-foreground">
+            {sessionClosed
+              ? "Sesión cerrada"
+              : `Mensajes ${userMsgCount}/${MAX_USER_MSGS} · inactividad ${INACTIVITY_MIN} min`}
           </p>
         </div>
-        <div className="flex gap-2 flex-wrap justify-end">
+        <div className="flex gap-2">
           <button
-            onClick={() => navigate("/mi-historial")}
-            className="text-xs px-3 py-2 rounded-xl border border-border"
-          >
-            Mi historial
-          </button>
-          <button
+            type="button"
             onClick={() => navigate("/tratamientos")}
-            className="text-xs px-3 py-2 rounded-xl bg-primary text-primary-foreground font-medium"
+            className="text-xs px-3 py-1.5 rounded-lg border border-border"
           >
-            Ver paquetes
+            Programas
           </button>
+          <button
+            type="button"
+            onClick={() => navigate("/audios")}
+            className="text-xs px-3 py-1.5 rounded-lg border border-border"
+          >
+            Audios
+          </button>
+          {!sessionClosed && userMsgCount > 0 && (
+            <button
+              type="button"
+              onClick={() => cerrarSesion()}
+              className="text-xs px-3 py-1.5 rounded-lg border border-amber-500/40 text-amber-300"
+            >
+              Terminar consulta
+            </button>
+          )}
         </div>
-      </header>
+      </div>
 
-      <div className="flex-1 overflow-y-auto px-4 py-5 space-y-3 min-h-[50vh]">
+      <div className="flex-1 overflow-y-auto px-4 py-6 space-y-3 max-w-2xl mx-auto w-full">
         {msgs.map((m, i) => (
           <div
             key={i}
             className={
               m.role === "user"
-                ? "ml-auto max-w-[85%] bg-primary/15 border border-primary/25 rounded-2xl px-4 py-3 text-sm"
-                : "mr-auto max-w-[85%] bg-card border border-border rounded-2xl px-4 py-3 text-sm"
+                ? "ml-auto max-w-[85%] rounded-2xl px-4 py-2.5 text-sm bg-primary/20 border border-primary/30"
+                : "mr-auto max-w-[85%] rounded-2xl px-4 py-2.5 text-sm bg-card border border-border"
             }
           >
             {m.text}
@@ -5362,51 +5620,64 @@ function AcompanamientoPage() {
         <div ref={bottomRef} />
       </div>
 
-     <div className="px-4 pb-2">
-       <div className="bg-primary/5 border border-primary/20 rounded-xl p-3 text-xs text-muted-foreground flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3">
-         <span>
-           Paso recomendado: <strong className="text-foreground">Programa Mes 1</strong>. Luego agenda consulta.
-         </span>
-         <div className="flex gap-2 flex-wrap">
-           <button
-             type="button"
-             onClick={() => navigate("/tratamientos")}
-             className="text-xs px-3 py-1.5 rounded-lg bg-primary text-primary-foreground font-medium"
-           >
-             Ver paquetes
-           </button>
-           <button
-             type="button"
-             onClick={() => navigate("/agendar-cita")}
-             className="text-xs px-3 py-1.5 rounded-lg border border-border"
-           >
-             Agendar cita
-           </button>
-         </div>
-       </div>
-     </div>
-
-      <div className="border-t border-border p-4 flex gap-2">
-        <input
-          value={text}
-          onChange={(e) => setText(e.target.value)}
-          onKeyDown={(e) => {
-            if (e.key === "Enter" && !e.shiftKey) {
-              e.preventDefault();
-              enviar();
-            }
-          }}
-          placeholder="Escriba cómo se siente…"
-          className="flex-1 bg-muted/40 border border-border rounded-xl px-4 py-3 text-sm"
-        />
-        <button
-          onClick={enviar}
-          disabled={loading || !text.trim()}
-          className="px-4 rounded-xl bg-primary text-primary-foreground text-sm font-medium disabled:opacity-40"
-        >
-          Enviar
-        </button>
-      </div>
+      {sessionClosed ? (
+        <div className="border-t border-border p-4 max-w-2xl mx-auto w-full space-y-2">
+          <p className="text-xs text-muted-foreground text-center">
+            Consulta finalizada. El registro quedó guardado en este dispositivo.
+          </p>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+            <button
+              type="button"
+              onClick={() => navigate("/tratamientos")}
+              className="py-2.5 rounded-xl text-sm font-semibold"
+              style={{ background: "linear-gradient(135deg,#0ccec6,#07a8a2)", color: "#031014" }}
+            >
+              Ver / activar plan
+            </button>
+            <button
+              type="button"
+              onClick={() => navigate("/audios")}
+              className="py-2.5 rounded-xl text-sm border border-border"
+            >
+              Audios y videos
+            </button>
+            <button
+              type="button"
+              onClick={() => navigate("/agendar-cita")}
+              className="py-2.5 rounded-xl text-sm border border-border"
+            >
+              Nueva cita
+            </button>
+          </div>
+        </div>
+      ) : (
+        <div className="border-t border-border p-4 max-w-2xl mx-auto w-full flex gap-2">
+          <input
+            value={text}
+            onChange={(e) => {
+              setText(e.target.value);
+              touch();
+            }}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" && !e.shiftKey) {
+                e.preventDefault();
+                enviar();
+              }
+            }}
+            placeholder="Escriba cómo se siente…"
+            className="flex-1 bg-muted/40 border border-border rounded-xl px-3 py-2.5 text-sm"
+          />
+          <button
+            type="button"
+            onClick={enviar}
+            disabled={loading || !text.trim()}
+            className="px-4 rounded-xl font-semibold disabled:opacity-40"
+            style={{ background: "linear-gradient(135deg,#0ccec6,#07a8a2)", color: "#031014" }}
+          >
+            Enviar
+          </button>
+        </div>
+      )}
     </div>
   );
 }
@@ -5526,11 +5797,14 @@ function MiHistorialPage() {
 function AgendarCitaPage() {
   const navigate = useNavigate();
   const API = (import.meta.env.VITE_API_URL as string) || "http://localhost:8080";
-  const [modalidad, setModalidad] = useState<"VIRTUAL_REAL" | "APOYO_IA">("VIRTUAL_REAL");
+  const { tienePlan, programa, loading: planLoading } = usePlanActivo();
+
+  const [modalidad, setModalidad] = useState<"VIRTUAL_REAL" | "APOYO_IA">("APOYO_IA");
+  const [rolIa, setRolIa] = useState<"PSICOLOGO" | "PSIQUIATRA" | "MEDICO_HOLISTICO">("PSICOLOGO");
   const [pros, setPros] = useState<any[]>([]);
   const [profId, setProfId] = useState("");
   const [fecha, setFecha] = useState("");
-  const [notas, setNotas] = useState("");
+  const [motivo, setMotivo] = useState("");
   const [loading, setLoading] = useState(false);
   const [msg, setMsg] = useState("");
   const [err, setErr] = useState("");
@@ -5545,21 +5819,22 @@ function AgendarCitaPage() {
       .catch(() => setPros([]));
   }, [API]);
 
-  /** datetime-local → formato que acepta Java LocalDateTime (sin Z ni ms) */
   function toLocalDateTime(value: string): string | null {
     if (!value) return null;
-      if (/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/.test(value)) return value + ":00";
-      return value.replace(/\.\d{3}Z?$/i, "").replace(/Z$/i, "").slice(0, 19);
-    {
-    }
-    // limpia ms / Z si vinieran
-    return value
-      .replace(/\.\d{3}Z?$/i, "")
-      .replace(/Z$/i, "")
-      .slice(0, 19);
+    if (/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/.test(value)) return value + ":00";
+    return value.replace(/\.\d{3}Z?$/i, "").replace(/Z$/i, "").slice(0, 19);
   }
 
   async function submit() {
+    if (!tienePlan) {
+      setErr("Necesita un plan activo para agendar. Active un programa primero.");
+      return;
+    }
+    if (!motivo.trim()) {
+      setErr("Indique el motivo de la consulta.");
+      return;
+    }
+
     setLoading(true);
     setMsg("");
     setErr("");
@@ -5567,16 +5842,16 @@ function AgendarCitaPage() {
       const jwt = localStorage.getItem("ch_jwt") || "";
       const body: Record<string, unknown> = {
         modalidad,
-        notasPaciente: notas?.trim() || null,
+        notasPaciente: motivo.trim(),
+        rolIa: modalidad === "APOYO_IA" ? rolIa : null,
       };
 
       if (modalidad === "VIRTUAL_REAL") {
         if (!profId) throw new Error("Seleccione un profesional");
         if (!fecha) throw new Error("Seleccione fecha y hora");
         body.profesionalId = Number(profId);
-        body.fechaHora = toLocalDateTime(fecha); // ✅ sin toISOString
+        body.fechaHora = toLocalDateTime(fecha);
       } else {
-        // APOYO_IA
         body.fechaHora = fecha
           ? toLocalDateTime(fecha)
           : toLocalDateTime(new Date().toISOString().slice(0, 16));
@@ -5593,11 +5868,23 @@ function AgendarCitaPage() {
       const j = await r.json();
       if (!r.ok) throw new Error(j.message || j.mensaje || "No se pudo agendar");
 
-      setMsg("Cita registrada. Se notificó por correo.");
       if (modalidad === "APOYO_IA") {
-        setTimeout(() => navigate("/acompanamiento"), 1200);
+        localStorage.setItem(
+          "ch_cita_ia",
+          JSON.stringify({
+            rolIa,
+            motivo: motivo.trim(),
+            programa,
+            citaId: j.data?.id ?? null,
+            at: Date.now(),
+          })
+        );
+        navigate("/acompanamiento");
+        setMsg("Cita IA registrada. Entrando a la consulta…");
+        setTimeout(() => navigate("/acompanamiento"), 900);
       } else {
-        setTimeout(() => navigate("/mis-citas"), 1200);
+        setMsg("Cita registrada. Se notificó por correo.");
+        setTimeout(() => navigate("/mis-citas"), 900);
       }
     } catch (e: any) {
       setErr(e.message || "Error al agendar");
@@ -5606,22 +5893,64 @@ function AgendarCitaPage() {
     }
   }
 
+  if (planLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <Loader2 className="w-8 h-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  // Sin plan → no puede agendar
+  if (!tienePlan) {
+    return (
+      <div className="min-h-screen bg-background px-4 py-10 max-w-lg mx-auto space-y-4">
+        <h1 className="text-xl font-bold">Agendar consulta</h1>
+        <div className="rounded-2xl border border-amber-500/30 bg-amber-500/10 p-5 space-y-3">
+          <p className="text-sm">
+            Las citas (con profesional real o con apoyo IA según el rol que elija) están incluidas
+            en los <strong>programas activos</strong>.
+          </p>
+          <p className="text-xs text-muted-foreground">
+            Active al menos el Mes 1 para agendar y desbloquear audios/videos de su plan.
+          </p>
+          <button
+            type="button"
+            onClick={() => navigate("/tratamientos")}
+            className="w-full py-3 rounded-xl text-sm font-semibold"
+            style={{ background: "linear-gradient(135deg,#0ccec6,#07a8a2)", color: "#031014" }}
+          >
+            Ver programas y activar plan
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div
-      className="min-h-screen bg-background px-4 py-8"
-      style={{ fontFamily: "'Plus Jakarta Sans', 'DM Sans', sans-serif" }}
-    >
+    <div className="min-h-screen bg-background px-4 py-8">
       <div className="max-w-lg mx-auto space-y-4">
         <button type="button" onClick={() => navigate(-1)} className="text-sm text-muted-foreground">
           ← Volver
         </button>
         <h1 className="text-xl font-bold">Agendar consulta</h1>
-        <p className="text-sm text-muted-foreground leading-relaxed">
-          Profesional real (videollamada) o apoyo por chat. Crisis:{" "}
-          <strong>800-911-2000</strong> · <strong>123</strong>.
+        <p className="text-xs text-emerald-400">
+          Plan activo: <strong>{programa}</strong> — tiene derecho a citas
+        </p>
+        <p className="text-sm text-muted-foreground">
+          Crisis: <strong>800-911-2000</strong> · <strong>123</strong>
         </p>
 
         <div className="flex gap-2">
+          <button
+            type="button"
+            onClick={() => setModalidad("APOYO_IA")}
+            className={`flex-1 py-2.5 rounded-xl text-sm border ${
+              modalidad === "APOYO_IA" ? "border-primary bg-primary/10" : "border-border"
+            }`}
+          >
+            Consulta IA (según rol)
+          </button>
           <button
             type="button"
             onClick={() => setModalidad("VIRTUAL_REAL")}
@@ -5631,16 +5960,35 @@ function AgendarCitaPage() {
           >
             Profesional real
           </button>
-          <button
-            type="button"
-            onClick={() => setModalidad("APOYO_IA")}
-            className={`flex-1 py-2.5 rounded-xl text-sm border ${
-              modalidad === "APOYO_IA" ? "border-primary bg-primary/10" : "border-border"
-            }`}
-          >
-            Apoyo IA (chat)
-          </button>
         </div>
+
+        {modalidad === "APOYO_IA" && (
+          <div className="space-y-3">
+            <p className="text-xs text-muted-foreground">
+              Elija el rol con el que desea que le atienda la consulta IA:
+            </p>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+              {(
+                [
+                  { id: "PSICOLOGO" as const, label: "Psicólogo" },
+                  { id: "PSIQUIATRA" as const, label: "Psiquiatra" },
+                  { id: "MEDICO_HOLISTICO" as const, label: "Médico holístico" },
+                ]
+              ).map((r) => (
+                <button
+                  key={r.id}
+                  type="button"
+                  onClick={() => setRolIa(r.id)}
+                  className={`py-2.5 rounded-xl text-sm border ${
+                    rolIa === r.id ? "border-primary bg-primary/10" : "border-border"
+                  }`}
+                >
+                  {r.label}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
 
         {modalidad === "VIRTUAL_REAL" && (
           <select
@@ -5651,8 +5999,7 @@ function AgendarCitaPage() {
             <option value="">Seleccione profesional…</option>
             {pros.map((p: any) => (
               <option key={p.id} value={p.id}>
-                {(p.nombre || p.name || p.email) +
-                  (p.especialidad ? " · " + p.especialidad : p.rol ? " · " + p.rol : "")}
+                {(p.nombre || p.email) + (p.especialidad ? " · " + p.especialidad : "")}
               </option>
             ))}
           </select>
@@ -5666,21 +6013,25 @@ function AgendarCitaPage() {
         />
 
         <textarea
-          value={notas}
-          onChange={(e) => setNotas(e.target.value)}
+          value={motivo}
+          onChange={(e) => setMotivo(e.target.value)}
           rows={3}
-          placeholder="Cómo se siente, si el sismo le afectó…"
+          placeholder="Motivo de la cita (obligatorio): ansiedad, craving, impacto del sismo…"
           className="w-full bg-muted/40 border border-border rounded-xl px-3 py-2.5 text-sm"
         />
 
         <button
           type="button"
           onClick={submit}
-          disabled={loading || (modalidad === "VIRTUAL_REAL" && (!profId || !fecha))}
+          disabled={
+            loading ||
+            !motivo.trim() ||
+            (modalidad === "VIRTUAL_REAL" && (!profId || !fecha))
+          }
           className="w-full py-3 rounded-xl text-sm font-semibold disabled:opacity-40"
-          style={{ background: "linear-gradient(135deg, #0ccec6, #07a8a2)", color: "#031014" }}
+          style={{ background: "linear-gradient(135deg,#0ccec6,#07a8a2)", color: "#031014" }}
         >
-          {loading ? "Agendando…" : "Confirmar y notificar por correo"}
+          {loading ? "Agendando…" : "Confirmar cita"}
         </button>
 
         {msg && <p className="text-sm text-emerald-400">{msg}</p>}
@@ -5689,6 +6040,153 @@ function AgendarCitaPage() {
     </div>
   );
 }
+
+//MI PLAN
+function MiPlanPage() {
+  const navigate = useNavigate();
+  const API = (import.meta.env.VITE_API_URL as string) || "http://localhost:8080";
+  const [plan, setPlan] = useState<any>(null);
+  const [pagos, setPagos] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [err, setErr] = useState("");
+
+  useEffect(() => {
+    const jwt = localStorage.getItem("ch_jwt") || "";
+    const headers = { Authorization: `Bearer ${jwt}` };
+
+    Promise.all([
+      fetch(`${API}/api/pagos/mi-plan`, { headers }).then((r) => r.json()),
+      fetch(`${API}/api/pagos/mios`, { headers }).then((r) => r.json()),
+    ])
+      .then(([p, m]) => {
+        const planData = p.data || p;
+        setPlan(planData);
+        setPagos(Array.isArray(m.data) ? m.data : []);
+        if (planData?.tienePlan && planData?.programa) {
+          setPlanActivoLocal(planData.programa);
+        }
+      })
+      .catch(() => setErr("No se pudo cargar el plan"))
+      .finally(() => setLoading(false));
+  }, [API]);
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <Loader2 className="w-8 h-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen bg-background max-w-lg mx-auto px-4 py-10 space-y-6"
+      style={{ fontFamily: "'Plus Jakarta Sans', 'DM Sans', sans-serif" }}>
+      <div>
+        <p className="text-[10px] text-primary uppercase tracking-widest">Mi cuenta</p>
+        <h1 className="text-2xl font-semibold">Mi plan activo</h1>
+        <p className="text-sm text-muted-foreground mt-1">
+          Consulta qué paquetes tienes y hasta cuándo.
+        </p>
+      </div>
+
+      {err && <p className="text-sm text-red-400">{err}</p>}
+
+      {plan?.tienePlan ? (
+        <div className="rounded-2xl border border-primary/30 bg-card p-6 space-y-3">
+          <span className="text-[10px] px-2 py-1 rounded-lg bg-emerald-500/15 text-emerald-400 border border-emerald-500/25">
+            ACTIVO
+          </span>
+          <h2 className="text-xl font-medium capitalize">{plan.programa}</h2>
+          <p className="text-sm text-muted-foreground">
+            Desde:{" "}
+            <strong className="text-foreground">
+              {plan.desde ? new Date(plan.desde).toLocaleString("es-CO") : "—"}
+            </strong>
+          </p>
+          <p className="text-sm text-muted-foreground">
+            Hasta:{" "}
+            <strong className="text-foreground">
+              {plan.hasta ? new Date(plan.hasta).toLocaleString("es-CO") : "—"}
+            </strong>
+          </p>
+          <p className="text-sm">
+            Días restantes: <strong>{plan.diasRestantes}</strong>
+          </p>
+          <ul className="text-sm space-y-1.5 mt-3">
+            {(plan.incluye || []).map((x: string) => (
+              <li key={x} className="flex gap-2">
+                <Check className="w-4 h-4 text-primary shrink-0 mt-0.5" />
+                {x}
+              </li>
+            ))}
+          </ul>
+          <div className="flex gap-2 pt-2">
+            <button
+              type="button"
+              onClick={() => navigate("/agendar-cita")}
+              className="flex-1 py-3 rounded-xl text-sm font-semibold"
+              style={{ background: "linear-gradient(135deg,#0ccec6,#07a8a2)", color: "#031014" }}
+            >
+              Agendar cita
+            </button>
+            <button
+              type="button"
+              onClick={() => navigate("/tratamientos")}
+              className="flex-1 py-3 rounded-xl text-sm border border-border"
+            >
+              Mejorar plan
+            </button>
+          </div>
+        </div>
+      ) : (
+        <div className="rounded-2xl border border-border bg-card p-6 space-y-4">
+          <p className="text-sm">No tienes un paquete activo en este momento.</p>
+          <button
+            type="button"
+            onClick={() => navigate("/tratamientos")}
+            className="w-full py-3 rounded-xl text-sm font-semibold"
+            style={{ background: "linear-gradient(135deg,#0ccec6,#07a8a2)", color: "#031014" }}
+          >
+            Ver programas
+          </button>
+        </div>
+      )}
+
+      {/* Historial de pagos / planes comprados */}
+      <div>
+        <h3 className="text-sm font-medium mb-3">Historial de compras</h3>
+        {pagos.length === 0 ? (
+          <p className="text-xs text-muted-foreground">Aún no hay pagos registrados.</p>
+        ) : (
+          <div className="space-y-2">
+            {pagos.map((p: any) => (
+              <div key={p.id} className="bg-card border border-border rounded-xl px-4 py-3 text-sm flex justify-between gap-2">
+                <div>
+                  <p className="font-medium capitalize">{p.programa}</p>
+                  <p className="text-xs text-muted-foreground">
+                    {p.pagadoEn || p.creadoEn
+                      ? new Date(p.pagadoEn || p.creadoEn).toLocaleString("es-CO")
+                      : "—"}
+                  </p>
+                </div>
+                <div className="text-right">
+                  <p className="text-xs">{p.estado}</p>
+                  <p className="text-xs text-muted-foreground">
+                    {p.monto != null ? `$${Number(p.monto).toLocaleString("es-CO")}` : ""}
+                  </p>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+
+
+// FIN PLAN
 function MisCitasPage() {
   const navigate = useNavigate();
   const API = (import.meta.env.VITE_API_URL as string) || "http://localhost:8080";
@@ -5915,6 +6413,7 @@ export default function App() {
               <Route path="/tratamientos" element={<PrivateRoute><TreatmentsPage /></PrivateRoute>} />
               <Route path="/audios" element={<PrivateRoute><AudioPage /></PrivateRoute>} />
               <Route path="/mi-historial" element={<PrivateRoute><MiHistorialPage /></PrivateRoute>} />
+              <Route path="/mi-plan" element={<PrivateRoute><MiPlanPage /></PrivateRoute>} />
               <Route path="/acompanamiento" element={<PrivateRoute><AcompanamientoPage /></PrivateRoute>} />
 
               <Route path="/agendar-cita" element={<PrivateRoute><AgendarCitaPage /></PrivateRoute>} />

@@ -3,6 +3,7 @@ package com.clinica.holistica.repository;
 import com.clinica.holistica.entity.HistoriaClinica;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 
 import java.util.List;
 
@@ -14,6 +15,18 @@ public interface HistoriaClinicaRepository extends JpaRepository<HistoriaClinica
 
     List<HistoriaClinica> findAllByOrderByIdDesc();
 
-    @Query("SELECT h FROM HistoriaClinica h LEFT JOIN FETCH h.usuario ORDER BY h.id DESC")
+    @Query("""
+        SELECT h FROM HistoriaClinica h
+        LEFT JOIN FETCH h.usuario
+        ORDER BY h.id DESC
+        """)
     List<HistoriaClinica> findAllWithUsuario();
+
+    @Query("""
+        SELECT h FROM HistoriaClinica h
+        LEFT JOIN FETCH h.usuario
+        WHERE h.usuario.id = :usuarioId
+        ORDER BY h.id DESC
+        """)
+    List<HistoriaClinica> findByUsuarioIdWithUsuario(@Param("usuarioId") Long usuarioId);
 }

@@ -12,4 +12,5 @@ public class HistoriaRequest {
     private Map<String, String> respuestas;
     private Boolean consentimientoAceptado;
 
+
 }
